@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await requireOperator()
     const { id } = await params
     const body = await request.json()
-    const { funcionarioId, backlogItemId, titulo, dataInicio, dataFim, areaSolicitante, cor } = body
+    const { funcionarioId, backlogItemId, titulo, dataInicio, dataFim, areaSolicitante, cor, horasDiarias } = body
 
     const data: Record<string, unknown> = {}
     if (funcionarioId !== undefined) data.funcionarioId = funcionarioId
@@ -48,6 +48,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (dataFim !== undefined) data.dataFim = new Date(dataFim)
     if (areaSolicitante !== undefined) data.areaSolicitante = areaSolicitante?.trim() || null
     if (cor !== undefined) data.cor = cor?.trim() || null
+    if (horasDiarias !== undefined) data.horasDiarias = horasDiarias != null ? Number(horasDiarias) : null
 
     const alocacao = await prisma.alocacao.update({
       where: { id },

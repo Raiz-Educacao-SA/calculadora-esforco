@@ -1,0 +1,1 @@
+ALTER TABLE "alocacoes" ADD COLUMN "horasDiarias" DOUBLE PRECISION;

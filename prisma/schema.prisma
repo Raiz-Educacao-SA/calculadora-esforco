@@ -245,6 +245,7 @@ model Alocacao {
   dataFim         DateTime
   areaSolicitante String?
   cor             String?
+  horasDiarias    Float?
   createdAt       DateTime     @default(now())
   funcionario     Funcionario  @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
   backlogItem     BacklogItem? @relation(fields: [backlogItemId], references: [id], onDelete: SetNull)

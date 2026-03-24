@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   try {
     await requireOperator()
     const body = await request.json()
-    const { funcionarioId, backlogItemId, titulo, dataInicio, dataFim, areaSolicitante, cor } = body
+    const { funcionarioId, backlogItemId, titulo, dataInicio, dataFim, areaSolicitante, cor, horasDiarias } = body
 
     if (!funcionarioId) {
       return NextResponse.json({ error: 'funcionarioId é obrigatório' }, { status: 400 })
@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
         dataFim: new Date(dataFim),
         areaSolicitante: areaSolicitante?.trim() || null,
         cor: cor?.trim() || null,
+        horasDiarias: horasDiarias != null ? Number(horasDiarias) : null,
       },
       include: {
         funcionario: { select: { id: true, nome: true, cargo: true } },

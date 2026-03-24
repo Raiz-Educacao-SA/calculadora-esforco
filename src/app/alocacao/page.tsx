@@ -30,6 +30,7 @@ interface Alocacao {
   dataFim: string
   areaSolicitante: string | null
   cor: string | null
+  horasDiarias: number | null
   funcionario: { id: string; nome: string; cargo: string | null }
   backlogItem?: BacklogItemRef | null
 }
@@ -42,6 +43,7 @@ interface FormData {
   dataFim: string
   areaSolicitante: string
   cor: string
+  horasDiarias: string
 }
 
 function nextBusinessDay(date: Date): Date {
@@ -121,6 +123,29 @@ function overlapsWeek(alocacao: Alocacao, weekStart: Date): boolean {
 
 const WEEKS_WINDOW = 8
 
+function calcularHorasDisponiveis(
+  funcionarioId: string,
+  dataInicio: string,
+  dataFim: string,
+  alocacoes: Alocacao[],
+  alocacaoConfig: { horasDiarias: number; percentualAlocacao: number },
+  excludeId?: string
+): number {
+  const horasEfetivas = alocacaoConfig.horasDiarias * (alocacaoConfig.percentualAlocacao / 100)
+  const inicio = new Date(dataInicio)
+  const fim = new Date(dataFim)
+  const horasJaAlocadas = alocacoes
+    .filter(
+      (a) =>
+        a.funcionarioId === funcionarioId &&
+        a.id !== excludeId &&
+        new Date(a.dataInicio) <= fim &&
+        new Date(a.dataFim) >= inicio
+    )
+    .reduce((sum, a) => sum + (a.horasDiarias ?? 0), 0)
+  return Math.max(0, horasEfetivas - horasJaAlocadas)
+}
+
 const emptyForm: FormData = {
   funcionarioId: '',
   backlogItemId: '',
@@ -129,6 +154,7 @@ const emptyForm: FormData = {
   dataFim: '',
   areaSolicitante: '',
   cor: '',
+  horasDiarias: '',
 }
 
 export default function AlocacaoPage() {
@@ -148,6 +174,7 @@ export default function AlocacaoPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [horasDisponiveis, setHorasDisponiveis] = useState<number | null>(null)
 
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
@@ -221,20 +248,31 @@ export default function AlocacaoPage() {
     setEditAlocacao(null)
     setForm({ ...emptyForm, funcionarioId: fi, dataInicio: ds, dataFim: de })
     setFormError('')
+    if (fi && ds && de) {
+      setHorasDisponiveis(calcularHorasDisponiveis(fi, ds, de, alocacoes, alocacaoConfig))
+    } else {
+      setHorasDisponiveis(null)
+    }
     setShowModal(true)
   }
 
   const openEdit = (alocacao: Alocacao) => {
     setEditAlocacao(alocacao)
+    const ds = dateToInput(new Date(alocacao.dataInicio))
+    const de = dateToInput(new Date(alocacao.dataFim))
     setForm({
       funcionarioId: alocacao.funcionarioId,
       backlogItemId: alocacao.backlogItemId ?? '',
       titulo: alocacao.titulo,
-      dataInicio: dateToInput(new Date(alocacao.dataInicio)),
-      dataFim: dateToInput(new Date(alocacao.dataFim)),
+      dataInicio: ds,
+      dataFim: de,
       areaSolicitante: alocacao.areaSolicitante ?? '',
       cor: alocacao.cor ?? '',
+      horasDiarias: alocacao.horasDiarias != null ? String(alocacao.horasDiarias) : '',
     })
+    setHorasDisponiveis(
+      calcularHorasDisponiveis(alocacao.funcionarioId, ds, de, alocacoes, alocacaoConfig, alocacao.id)
+    )
     setFormError('')
     setShowModal(true)
   }
@@ -244,6 +282,7 @@ export default function AlocacaoPage() {
     setEditAlocacao(null)
     setForm(emptyForm)
     setFormError('')
+    setHorasDisponiveis(null)
   }
 
   const handleBacklogSelect = (backlogItemId: string) => {
@@ -297,6 +336,7 @@ export default function AlocacaoPage() {
           dataFim: form.dataFim,
           areaSolicitante: form.areaSolicitante.trim() || null,
           cor: form.cor.trim() || null,
+          horasDiarias: form.horasDiarias ? Number(form.horasDiarias) : null,
         }),
       })
       const json = await res.json()
@@ -540,6 +580,9 @@ export default function AlocacaoPage() {
                                 {alocacao.areaSolicitante && (
                                   <span className="block truncate opacity-80 text-xs">{alocacao.areaSolicitante}</span>
                                 )}
+                                {alocacao.horasDiarias && (
+                                  <span className="text-xs opacity-80 block leading-tight">{alocacao.horasDiarias}h/dia</span>
+                                )}
                               </button>
                             )
                           })}
@@ -615,6 +658,9 @@ export default function AlocacaoPage() {
                             <p className="text-xs text-gray-400 mt-0.5">
                               {new Date(a.dataInicio).toLocaleDateString('pt-BR')} – {new Date(a.dataFim).toLocaleDateString('pt-BR')}
                             </p>
+                            {a.horasDiarias && (
+                              <p className="text-xs text-teal-600 dark:text-teal-400">{a.horasDiarias}h/dia</p>
+                            )}
                           </div>
                           {isAdmin && (
                             <button
@@ -666,7 +712,26 @@ export default function AlocacaoPage() {
                   </label>
                   <select
                     value={form.funcionarioId}
-                    onChange={(e) => setForm((f) => ({ ...f, funcionarioId: e.target.value }))}
+                    onChange={(e) => {
+                      const newFuncionarioId = e.target.value
+                      setForm((f) => {
+                        if (newFuncionarioId && f.dataInicio && f.dataFim) {
+                          setHorasDisponiveis(
+                            calcularHorasDisponiveis(
+                              newFuncionarioId,
+                              f.dataInicio,
+                              f.dataFim,
+                              alocacoes,
+                              alocacaoConfig,
+                              editAlocacao?.id
+                            )
+                          )
+                        } else {
+                          setHorasDisponiveis(null)
+                        }
+                        return { ...f, funcionarioId: newFuncionarioId }
+                      })
+                    }}
                     className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   >
                     <option value="">Selecione...</option>
@@ -721,11 +786,13 @@ export default function AlocacaoPage() {
                         const rawValue = e.target.value
                         if (!rawValue) {
                           setForm((f) => ({ ...f, dataInicio: rawValue }))
+                          setHorasDisponiveis(null)
                           return
                         }
                         const newStart = nextBusinessDay(new Date(rawValue + 'T12:00:00'))
                         const newStartStr = dateToInput(newStart)
                         setForm((f) => {
+                          let newEndStr: string
                           if (f.dataFim && f.dataInicio) {
                             const oldStart = new Date(f.dataInicio + 'T12:00:00')
                             const oldEnd = new Date(f.dataFim + 'T12:00:00')
@@ -733,9 +800,23 @@ export default function AlocacaoPage() {
                             const newEnd = businessDays > 1
                               ? addBusinessDays(newStart, businessDays - 1)
                               : newStart
-                            return { ...f, dataInicio: newStartStr, dataFim: dateToInput(newEnd) }
+                            newEndStr = dateToInput(newEnd)
+                          } else {
+                            newEndStr = f.dataFim || newStartStr
                           }
-                          return { ...f, dataInicio: newStartStr, dataFim: f.dataFim || newStartStr }
+                          if (f.funcionarioId && newStartStr && newEndStr) {
+                            setHorasDisponiveis(
+                              calcularHorasDisponiveis(
+                                f.funcionarioId,
+                                newStartStr,
+                                newEndStr,
+                                alocacoes,
+                                alocacaoConfig,
+                                editAlocacao?.id
+                              )
+                            )
+                          }
+                          return { ...f, dataInicio: newStartStr, dataFim: newEndStr }
                         })
                       }}
                       className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
@@ -752,14 +833,66 @@ export default function AlocacaoPage() {
                         const rawValue = e.target.value
                         if (!rawValue) {
                           setForm((f) => ({ ...f, dataFim: rawValue }))
+                          setHorasDisponiveis(null)
                           return
                         }
                         const adjustedEnd = nextBusinessDay(new Date(rawValue + 'T12:00:00'))
-                        setForm((f) => ({ ...f, dataFim: dateToInput(adjustedEnd) }))
+                        const newEndStr = dateToInput(adjustedEnd)
+                        setForm((f) => {
+                          if (f.funcionarioId && f.dataInicio && newEndStr) {
+                            setHorasDisponiveis(
+                              calcularHorasDisponiveis(
+                                f.funcionarioId,
+                                f.dataInicio,
+                                newEndStr,
+                                alocacoes,
+                                alocacaoConfig,
+                                editAlocacao?.id
+                              )
+                            )
+                          }
+                          return { ...f, dataFim: newEndStr }
+                        })
                       }}
                       className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                     />
                   </div>
+                </div>
+
+                {/* Horas disponíveis */}
+                {horasDisponiveis !== null && (
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
+                    <p className="font-medium text-blue-800 dark:text-blue-300">
+                      Horas disponíveis: <span className="font-bold">{horasDisponiveis.toFixed(1)}h/dia</span>
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                      {alocacaoConfig.horasDiarias}h × {alocacaoConfig.percentualAlocacao}% = {(alocacaoConfig.horasDiarias * alocacaoConfig.percentualAlocacao / 100).toFixed(1)}h efetivas
+                      {horasDisponiveis < (alocacaoConfig.horasDiarias * alocacaoConfig.percentualAlocacao / 100) &&
+                        ` — ${((alocacaoConfig.horasDiarias * alocacaoConfig.percentualAlocacao / 100) - horasDisponiveis).toFixed(1)}h já alocadas em outros projetos`
+                      }
+                    </p>
+                  </div>
+                )}
+
+                {/* Horas diárias */}
+                <div>
+                  <label htmlFor="horasDiarias" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Horas Diárias <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="horasDiarias"
+                    type="number"
+                    min="0.5"
+                    max={horasDisponiveis ?? undefined}
+                    step="0.5"
+                    value={form.horasDiarias}
+                    onChange={(e) => setForm((f) => ({ ...f, horasDiarias: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    placeholder={horasDisponiveis !== null ? `Máx: ${horasDisponiveis.toFixed(1)}h` : 'Ex: 4'}
+                  />
+                  {horasDisponiveis !== null && Number(form.horasDiarias) > horasDisponiveis && (
+                    <p className="mt-1 text-xs text-red-500">Excede as horas disponíveis ({horasDisponiveis.toFixed(1)}h/dia)</p>
+                  )}
                 </div>
 
                 <div>
