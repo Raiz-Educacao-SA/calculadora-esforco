@@ -16,6 +16,7 @@ interface BacklogItemRef {
   solicitacao: {
     titulo: string
     areaSolicitante: string | null
+    esforcoTotal: number | null
     area: { nome: string }
   }
 }
@@ -155,6 +156,11 @@ export default function AlocacaoPage() {
   const [filterNome, setFilterNome] = useState('')
   const [filterAreaSolicitante, setFilterAreaSolicitante] = useState('')
 
+  const [alocacaoConfig, setAlocacaoConfig] = useState<{ percentualAlocacao: number; horasDiarias: number }>({
+    percentualAlocacao: 80,
+    horasDiarias: 8,
+  })
+
   const showSuccess = (msg: string) => {
     setSuccess(msg)
     setTimeout(() => setSuccess(''), 3000)
@@ -198,6 +204,14 @@ export default function AlocacaoPage() {
         if (data?.role === 'ADMIN') setIsAdmin(true)
       })
       .catch(() => {})
+    fetch('/api/parametrizacao/alocacao-config')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.percentualAlocacao !== undefined && json.horasDiarias !== undefined) {
+          setAlocacaoConfig({ percentualAlocacao: json.percentualAlocacao, horasDiarias: json.horasDiarias })
+        }
+      })
+      .catch(() => {})
   }, [fetchData])
 
   const openCreate = (funcionarioId?: string, weekStart?: Date) => {
@@ -237,13 +251,24 @@ export default function AlocacaoPage() {
     if (item) {
       const area = item.solicitacao.areaSolicitante ?? item.solicitacao.area.nome
       const areaCadastrada = areasNegocio.find((a) => a.nome === area)
-      setForm((f) => ({
-        ...f,
-        backlogItemId,
-        titulo: item.solicitacao.titulo,
-        areaSolicitante: area,
-        cor: area ? (areaCadastrada?.cor ?? getAreaColorHex(area)) : f.cor,
-      }))
+      const esforcoTotal = item.solicitacao.esforcoTotal
+      setForm((f) => {
+        let dataFim = f.dataFim
+        if (esforcoTotal && esforcoTotal > 0 && f.dataInicio) {
+          const horasEfetivas = alocacaoConfig.horasDiarias * (alocacaoConfig.percentualAlocacao / 100)
+          const diasNecessarios = Math.ceil(esforcoTotal / horasEfetivas)
+          const dataInicio = new Date(f.dataInicio + 'T12:00:00')
+          dataFim = dateToInput(addBusinessDays(dataInicio, diasNecessarios - 1))
+        }
+        return {
+          ...f,
+          backlogItemId,
+          titulo: item.solicitacao.titulo,
+          areaSolicitante: area,
+          cor: area ? (areaCadastrada?.cor ?? getAreaColorHex(area)) : f.cor,
+          dataFim,
+        }
+      })
     } else {
       setForm((f) => ({ ...f, backlogItemId }))
     }

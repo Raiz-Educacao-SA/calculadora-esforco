@@ -63,6 +63,13 @@ export default function ParametrizacaoPage() {
   const [valorHoraInput, setValorHoraInput] = useState<string>(String(DEFAULT_VALOR_HORA))
   const [savingValorHora, setSavingValorHora] = useState(false)
 
+  // Alocação config
+  const [percentualAlocacao, setPercentualAlocacao] = useState<number>(80)
+  const [percentualAlocacaoInput, setPercentualAlocacaoInput] = useState<string>('80')
+  const [horasDiarias, setHorasDiarias] = useState<number>(8)
+  const [horasDiariasInput, setHorasDiariasInput] = useState<string>('8')
+  const [savingAlocacaoConfig, setSavingAlocacaoConfig] = useState(false)
+
   const showSuccess = (msg: string) => { setSuccess(msg); setTimeout(() => setSuccess(''), 3000) }
   const showError = (msg: string) => { setError(msg); setTimeout(() => setError(''), 5000) }
 
@@ -73,6 +80,19 @@ export default function ParametrizacaoPage() {
         if (json.valorHora) {
           setValorHora(json.valorHora)
           setValorHoraInput(String(json.valorHora))
+        }
+      })
+      .catch(() => {})
+    fetch('/api/parametrizacao/alocacao-config')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.percentualAlocacao !== undefined) {
+          setPercentualAlocacao(json.percentualAlocacao)
+          setPercentualAlocacaoInput(String(json.percentualAlocacao))
+        }
+        if (json.horasDiarias !== undefined) {
+          setHorasDiarias(json.horasDiarias)
+          setHorasDiariasInput(String(json.horasDiarias))
         }
       })
       .catch(() => {})
@@ -97,6 +117,32 @@ export default function ParametrizacaoPage() {
       showError('Erro de conexão.')
     } finally {
       setSavingValorHora(false)
+    }
+  }
+
+  const handleSaveAlocacaoConfig = async () => {
+    const perc = Number(percentualAlocacaoInput)
+    const horas = Number(horasDiariasInput)
+    if (!perc || perc <= 0 || perc > 100) { showError('Percentual de alocação deve ser entre 1 e 100.'); return }
+    if (!horas || horas <= 0) { showError('Horas diárias deve ser maior que zero.'); return }
+    setSavingAlocacaoConfig(true)
+    try {
+      const res = await fetch('/api/parametrizacao/alocacao-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ percentualAlocacao: perc, horasDiarias: horas }),
+      })
+      const json = await res.json()
+      if (!res.ok) { showError(json.error ?? 'Erro ao salvar.'); return }
+      setPercentualAlocacao(json.percentualAlocacao)
+      setPercentualAlocacaoInput(String(json.percentualAlocacao))
+      setHorasDiarias(json.horasDiarias)
+      setHorasDiariasInput(String(json.horasDiarias))
+      showSuccess('Configuração de alocação atualizada com sucesso.')
+    } catch {
+      showError('Erro de conexão.')
+    } finally {
+      setSavingAlocacaoConfig(false)
     }
   }
 
@@ -394,6 +440,70 @@ export default function ParametrizacaoPage() {
             <button
               type="button"
               onClick={() => setValorHoraInput(String(valorHora))}
+              className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Alocação em Projetos config */}
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Alocação em Projetos</h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          Define quanto do tempo útil diário de cada funcionário é dedicado a projetos.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-40">
+            <label htmlFor="percentual-alocacao" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              Percentual de Alocação (%)
+            </label>
+            <input
+              id="percentual-alocacao"
+              type="number"
+              min="1"
+              max="100"
+              step="1"
+              value={percentualAlocacaoInput}
+              onChange={(e) => setPercentualAlocacaoInput(e.target.value)}
+              className={`${inputClass} w-full`}
+            />
+          </div>
+          <div className="w-40">
+            <label htmlFor="horas-diarias" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              Horas Diárias (h)
+            </label>
+            <input
+              id="horas-diarias"
+              type="number"
+              min="0.5"
+              step="0.5"
+              value={horasDiariasInput}
+              onChange={(e) => setHorasDiariasInput(e.target.value)}
+              className={`${inputClass} w-full`}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveAlocacaoConfig}
+            disabled={
+              savingAlocacaoConfig ||
+              (Number(percentualAlocacaoInput) === percentualAlocacao &&
+                Number(horasDiariasInput) === horasDiarias)
+            }
+            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+          >
+            {savingAlocacaoConfig ? 'Salvando...' : 'Salvar'}
+          </button>
+          {(Number(percentualAlocacaoInput) !== percentualAlocacao ||
+            Number(horasDiariasInput) !== horasDiarias) && (
+            <button
+              type="button"
+              onClick={() => {
+                setPercentualAlocacaoInput(String(percentualAlocacao))
+                setHorasDiariasInput(String(horasDiarias))
+              }}
               className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             >
               Cancelar
