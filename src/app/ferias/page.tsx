@@ -55,6 +55,42 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 }
 
+// --- Timeline helpers ---
+const WEEKS_WINDOW = 12
+
+function startOfWeek(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function addWeeks(date: Date, weeks: number): Date {
+  const d = new Date(date)
+  d.setDate(d.getDate() + weeks * 7)
+  return d
+}
+
+function formatWeekLabel(start: Date): string {
+  return start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+function formatPeriodLabel(start: Date, end: Date): string {
+  const startLabel = start.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  const endLabel = end.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+  return `${startLabel} – ${endLabel}`
+}
+
+function overlapsWeek(ferias: Ferias, weekStart: Date, weekEnd: Date): boolean {
+  const inicio = new Date(ferias.dataInicio)
+  const fim = new Date(ferias.dataFim)
+  inicio.setHours(12)
+  fim.setHours(12)
+  return inicio <= weekEnd && fim >= weekStart
+}
+
 export default function FeriasPage() {
   const [ferias, setFerias] = useState<Ferias[]>([])
   const [funcionarios, setFuncionarios] = useState<FuncionarioBasico[]>([])
@@ -69,6 +105,14 @@ export default function FeriasPage() {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
+
+  // View mode
+  const [viewMode, setViewMode] = useState<'lista' | 'timeline'>('lista')
+
+  // Timeline navigation
+  const [windowStart, setWindowStart] = useState<Date>(() => startOfWeek(new Date()))
+  const weeks = Array.from({ length: WEEKS_WINDOW }, (_, i) => addWeeks(windowStart, i))
+  const periodEnd = addWeeks(weeks[WEEKS_WINDOW - 1], 1)
 
   const showSuccess = (msg: string) => {
     setSuccess(msg)
@@ -106,8 +150,8 @@ export default function FeriasPage() {
         setSession(data)
 
         const resFuncs = await fetch('/api/funcionarios')
-        const todos: (FuncionarioBasico & { userId?: string | null })[] = resFuncs.ok ? await resFuncs.json() : []
-        const ativos = todos.filter((f) => (f as { ativo?: boolean }).ativo !== false)
+        const todos: (FuncionarioBasico & { userId?: string | null; ativo?: boolean })[] = resFuncs.ok ? await resFuncs.json() : []
+        const ativos = todos.filter((f) => f.ativo !== false)
         setFuncionarios(ativos)
 
         if (data.role === 'OPERATOR') {
@@ -221,6 +265,19 @@ export default function FeriasPage() {
   const isOperator = session?.role === 'OPERATOR'
   const canRegister = isAdmin || (isOperator && !!meuFuncionario)
 
+  // Timeline: funcionários ordenados por nome
+  const funcionariosOrdenados = [...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+
+  // Contagem de funcionários com férias no período da timeline
+  const funcionariosComFeriasNoPeriodo = funcionariosOrdenados.filter((func) =>
+    ferias.some((f) => {
+      if (f.funcionarioId !== func.id) return false
+      const weekEnd = new Date(periodEnd)
+      weekEnd.setHours(23, 59, 59, 999)
+      return overlapsWeek(f, windowStart, weekEnd)
+    })
+  ).length
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -228,18 +285,36 @@ export default function FeriasPage() {
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Férias</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Gerencie os períodos de férias dos membros do time.</p>
         </div>
-        {(isAdmin || isOperator) && (
-          <button
-            onClick={openCreate}
-            disabled={isOperator && !meuFuncionario}
-            className="inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Registrar Férias
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* View toggle */}
+          <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
+            <button
+              onClick={() => setViewMode('lista')}
+              className={`px-3 py-1.5 text-sm font-medium ${viewMode === 'lista' ? 'bg-teal-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            >
+              Lista
+            </button>
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={`px-3 py-1.5 text-sm font-medium ${viewMode === 'timeline' ? 'bg-teal-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            >
+              Timeline
+            </button>
+          </div>
+
+          {(isAdmin || isOperator) && (
+            <button
+              onClick={openCreate}
+              disabled={isOperator && !meuFuncionario}
+              className="inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Registrar Férias
+            </button>
+          )}
+        </div>
       </div>
 
       {isOperator && !meuFuncionario && !loading && (
@@ -259,99 +334,236 @@ export default function FeriasPage() {
         </div>
       )}
 
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
-            <svg className="mr-2 h-4 w-4 animate-spin text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            Carregando...
-          </div>
-        ) : ferias.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <svg className="mb-3 h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <p className="text-sm">Nenhum período de férias registrado.</p>
-            {canRegister && (
-              <button onClick={openCreate} className="mt-3 text-sm text-teal-600 hover:underline">
-                Registrar primeiro período
+      {/* ---- VISTA: LISTA ---- */}
+      {viewMode === 'lista' && (
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
+              <svg className="mr-2 h-4 w-4 animate-spin text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              Carregando...
+            </div>
+          ) : ferias.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+              <svg className="mb-3 h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className="text-sm">Nenhum período de férias registrado.</p>
+              {canRegister && (
+                <button onClick={openCreate} className="mt-3 text-sm text-teal-600 hover:underline">
+                  Registrar primeiro período
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Mobile card list */}
+              <ul className="divide-y divide-gray-100 dark:divide-gray-700 sm:hidden">
+                {ferias.map((f) => (
+                  <li key={f.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{f.funcionario.nome}</p>
+                        {f.funcionario.area && (
+                          <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">{f.funcionario.area.nome}</p>
+                        )}
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {formatDate(f.dataInicio)} – {formatDate(f.dataFim)}
+                          <span className="ml-1 text-gray-400">({calcDuracao(f.dataInicio, f.dataFim)} dias)</span>
+                        </p>
+                        {f.observacao && (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{f.observacao}</p>
+                        )}
+                      </div>
+                    </div>
+                    {canEditFerias(f) && (
+                      <div className="flex gap-2">
+                        <button onClick={() => openEdit(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
+                        <button onClick={() => setDeleteConfirm(f.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+              {/* Desktop table */}
+              <table className="hidden sm:table min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Funcionário</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Área Técnica</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Período</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Duração</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Observação</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                  {ferias.map((f) => (
+                    <tr key={f.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{f.funcionario.nome}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{f.funcionario.area?.nome ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                        {formatDate(f.dataInicio)} – {formatDate(f.dataFim)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                        {calcDuracao(f.dataInicio, f.dataFim)} dias
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                        {f.observacao ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {canEditFerias(f) && (
+                          <div className="inline-flex items-center gap-2">
+                            <button onClick={() => openEdit(f)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
+                            <button onClick={() => setDeleteConfirm(f.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ---- VISTA: TIMELINE ---- */}
+      {viewMode === 'timeline' && (
+        <div className="space-y-4">
+          {/* Period navigation */}
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 shadow-sm">
+            <button
+              onClick={() => setWindowStart((d) => addWeeks(d, -WEEKS_WINDOW))}
+              className="rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
+              aria-label="Período anterior"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {formatPeriodLabel(weeks[0], periodEnd)}
+              </span>
+              <button
+                onClick={() => setWindowStart(startOfWeek(new Date()))}
+                className="rounded border border-gray-300 dark:border-gray-600 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Hoje
               </button>
+            </div>
+            <button
+              onClick={() => setWindowStart((d) => addWeeks(d, WEEKS_WINDOW))}
+              className="rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
+              aria-label="Próximo período"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Timeline table */}
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-x-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
+                <svg className="mr-2 h-4 w-4 animate-spin text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Carregando...
+              </div>
+            ) : funcionariosOrdenados.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <svg className="mb-3 h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p className="text-sm">Nenhum funcionário ativo cadastrado.</p>
+              </div>
+            ) : (
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-700/50">
+                    <th className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-700/50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 min-w-[180px]">
+                      Funcionário
+                    </th>
+                    {weeks.map((w, i) => (
+                      <th
+                        key={i}
+                        className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 min-w-[80px] border-l border-gray-100 dark:border-gray-700"
+                      >
+                        {formatWeekLabel(w)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {funcionariosOrdenados.map((func) => {
+                    const feriasDoFunc = ferias.filter((f) => f.funcionarioId === func.id)
+                    return (
+                      <tr key={func.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30">
+                        <td className="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 border-r border-gray-100 dark:border-gray-700">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{func.nome}</p>
+                          {func.area && (
+                            <p className="text-xs text-teal-600 dark:text-teal-400">{func.area.nome}</p>
+                          )}
+                        </td>
+                        {weeks.map((w, i) => {
+                          const weekEnd = new Date(w)
+                          weekEnd.setDate(weekEnd.getDate() + 6)
+                          weekEnd.setHours(23, 59, 59, 999)
+                          const feriasNaSemana = feriasDoFunc.filter((f) => overlapsWeek(f, w, weekEnd))
+
+                          return (
+                            <td
+                              key={i}
+                              className="px-1 py-2 border-l border-gray-100 dark:border-gray-700 align-top"
+                              style={{ minWidth: '80px' }}
+                            >
+                              {feriasNaSemana.length > 0 ? (
+                                <div className="flex flex-col gap-0.5">
+                                  {feriasNaSemana.map((f) => {
+                                    const duracao = calcDuracao(f.dataInicio, f.dataFim)
+                                    return (
+                                      <div
+                                        key={f.id}
+                                        className="mx-0.5 rounded px-1.5 py-1 text-xs font-medium text-white bg-amber-500 dark:bg-amber-600 cursor-default"
+                                        title={`${formatDate(f.dataInicio)} – ${formatDate(f.dataFim)}${f.observacao ? ` | ${f.observacao}` : ''}`}
+                                      >
+                                        <span className="block truncate leading-tight">Férias</span>
+                                        <span className="block text-xs opacity-80 leading-tight">{duracao}d</span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="w-full h-10 rounded bg-gray-50 dark:bg-gray-700/30" />
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
-        ) : (
-          <>
-            {/* Mobile card list */}
-            <ul className="divide-y divide-gray-100 dark:divide-gray-700 sm:hidden">
-              {ferias.map((f) => (
-                <li key={f.id} className="p-4 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{f.funcionario.nome}</p>
-                      {f.funcionario.area && (
-                        <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">{f.funcionario.area.nome}</p>
-                      )}
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {formatDate(f.dataInicio)} – {formatDate(f.dataFim)}
-                        <span className="ml-1 text-gray-400">({calcDuracao(f.dataInicio, f.dataFim)} dias)</span>
-                      </p>
-                      {f.observacao && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{f.observacao}</p>
-                      )}
-                    </div>
-                  </div>
-                  {canEditFerias(f) && (
-                    <div className="flex gap-2">
-                      <button onClick={() => openEdit(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                      <button onClick={() => setDeleteConfirm(f.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
 
-            {/* Desktop table */}
-            <table className="hidden sm:table min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Funcionário</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Área Técnica</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Período</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Duração</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Observação</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                {ferias.map((f) => (
-                  <tr key={f.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{f.funcionario.nome}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{f.funcionario.area?.nome ?? '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(f.dataInicio)} – {formatDate(f.dataFim)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {calcDuracao(f.dataInicio, f.dataFim)} dias
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                      {f.observacao ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {canEditFerias(f) && (
-                        <div className="inline-flex items-center gap-2">
-                          <button onClick={() => openEdit(f)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                          <button onClick={() => setDeleteConfirm(f.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
+          {/* Summary */}
+          {!loading && funcionariosOrdenados.length > 0 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {funcionariosComFeriasNoPeriodo === 0
+                ? 'Nenhum funcionário com férias neste período.'
+                : `${funcionariosComFeriasNoPeriodo} funcionário${funcionariosComFeriasNoPeriodo > 1 ? 's' : ''} com férias neste período.`}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Modal Form */}
       {showForm && (
