@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin, AuthError } from '@/lib/auth'
+import { requireAdmin, getSession, ROLES, AuthError } from '@/lib/auth'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -21,10 +21,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin()
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+    // Only ADMIN can update funcionarios; OPERATOR can only do so for their own via ferias flow
+    if (session.role !== ROLES.ADMIN) {
+      return NextResponse.json({ error: 'Acesso restrito a administradores' }, { status: 403 })
+    }
+
     const { id } = await params
     const body = await request.json()
-    const { nome, cargo, ativo, areaId } = body
+    const { nome, cargo, ativo, areaId, userId } = body
 
     if (nome !== undefined && !nome?.trim()) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
@@ -35,12 +43,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (cargo !== undefined) data.cargo = cargo?.trim() || null
     if (ativo !== undefined) data.ativo = ativo
     if (areaId !== undefined) data.areaId = areaId || null
+    if (userId !== undefined) data.userId = userId || null
 
     const funcionario = await prisma.funcionario.update({
       where: { id },
       data,
       include: {
         area: { select: { id: true, nome: true } },
+        user: { select: { id: true, nome: true, email: true } },
       },
     })
 

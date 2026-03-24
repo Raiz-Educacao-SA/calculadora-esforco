@@ -185,16 +185,17 @@ model AlocacaoConfig {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  nome      String
-  senha     String?
-  googleId  String?   @unique
-  role      String    @default("VIEWER")
-  ativo     Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  sessions  Session[]
+  id          String       @id @default(cuid())
+  email       String       @unique
+  nome        String
+  senha       String?
+  googleId    String?      @unique
+  role        String       @default("VIEWER")
+  ativo       Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  sessions    Session[]
+  funcionario Funcionario?
 
   @@map("users")
 }
@@ -228,12 +229,28 @@ model Funcionario {
   cargo     String?
   ativo     Boolean     @default(true)
   areaId    String?
+  userId    String?     @unique
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   area      Area?       @relation(fields: [areaId], references: [id])
+  user      User?       @relation(fields: [userId], references: [id])
   alocacoes Alocacao[]
+  ferias    Ferias[]
 
   @@map("funcionarios")
+}
+
+model Ferias {
+  id            String      @id @default(cuid())
+  funcionarioId String
+  dataInicio    DateTime
+  dataFim       DateTime
+  observacao    String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  funcionario   Funcionario @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+
+  @@map("ferias")
 }
 
 model Alocacao {

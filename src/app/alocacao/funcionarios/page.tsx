@@ -7,25 +7,35 @@ interface Area {
   nome: string
 }
 
+interface UserOption {
+  id: string
+  nome: string
+  email: string
+}
+
 interface Funcionario {
   id: string
   nome: string
   cargo: string | null
   ativo: boolean
   area: Area | null
+  userId?: string | null
+  user?: UserOption | null
 }
 
 interface FormData {
   nome: string
   cargo: string
   areaId: string
+  userId: string
 }
 
-const emptyForm: FormData = { nome: '', cargo: '', areaId: '' }
+const emptyForm: FormData = { nome: '', cargo: '', areaId: '', userId: '' }
 
 export default function FuncionariosPage() {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([])
   const [areas, setAreas] = useState<Area[]>([])
+  const [usuarios, setUsuarios] = useState<UserOption[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -69,7 +79,13 @@ export default function FuncionariosPage() {
     fetch('/api/auth/me')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.role === 'ADMIN') setIsAdmin(true)
+        if (data?.role === 'ADMIN') {
+          setIsAdmin(true)
+          fetch('/api/admin/usuarios')
+            .then((r) => (r.ok ? r.json() : []))
+            .then((users: UserOption[]) => setUsuarios(Array.isArray(users) ? users : []))
+            .catch(() => {})
+        }
       })
       .catch(() => {})
   }, [fetchFuncionarios])
@@ -83,7 +99,7 @@ export default function FuncionariosPage() {
 
   const openEdit = (f: Funcionario) => {
     setEditItem(f)
-    setForm({ nome: f.nome, cargo: f.cargo ?? '', areaId: f.area?.id ?? '' })
+    setForm({ nome: f.nome, cargo: f.cargo ?? '', areaId: f.area?.id ?? '', userId: f.userId ?? '' })
     setFormError('')
     setShowForm(true)
   }
@@ -109,7 +125,7 @@ export default function FuncionariosPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: form.nome.trim(), cargo: form.cargo.trim() || null, areaId: form.areaId || null }),
+        body: JSON.stringify({ nome: form.nome.trim(), cargo: form.cargo.trim() || null, areaId: form.areaId || null, userId: form.userId || null }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -339,6 +355,33 @@ export default function FuncionariosPage() {
                     ))}
                   </select>
                 </div>
+                {isAdmin && (
+                  <div>
+                    <label htmlFor="userId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Usuário do Sistema (login)
+                    </label>
+                    <select
+                      id="userId"
+                      value={form.userId}
+                      onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    >
+                      <option value="">Nenhum</option>
+                      {usuarios
+                        .filter((u) => {
+                          // show users not linked to any funcionario, plus the one already linked to this funcionario
+                          const alreadyLinked = funcionarios.some(
+                            (func) => func.userId === u.id && func.id !== editItem?.id
+                          )
+                          return !alreadyLinked
+                        })
+                        .map((u) => (
+                          <option key={u.id} value={u.id}>{u.nome} ({u.email})</option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
                 <button
