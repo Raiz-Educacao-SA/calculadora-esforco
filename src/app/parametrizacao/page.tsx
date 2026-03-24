@@ -63,6 +63,8 @@ export default function ParametrizacaoPage() {
   const [valorHoraInput, setValorHoraInput] = useState<string>(String(DEFAULT_VALOR_HORA))
   const [savingValorHora, setSavingValorHora] = useState(false)
 
+  const [isAdmin, setIsAdmin] = useState(false)
+
   // Alocação config
   const [percentualAlocacao, setPercentualAlocacao] = useState<number>(80)
   const [percentualAlocacaoInput, setPercentualAlocacaoInput] = useState<string>('80')
@@ -74,6 +76,10 @@ export default function ParametrizacaoPage() {
   const showError = (msg: string) => { setError(msg); setTimeout(() => setError(''), 5000) }
 
   useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.role === 'ADMIN') setIsAdmin(true) })
+      .catch(() => {})
     fetch('/api/admin/hourly-rate')
       .then((r) => r.json())
       .then((json) => {
@@ -408,7 +414,7 @@ export default function ParametrizacaoPage() {
       )}
 
       {/* Valor hora config */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+      {isAdmin && <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Valor da Hora de Trabalho</h2>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           Usado para converter ganhos do tipo &ldquo;Redução de Horas&rdquo; para valor financeiro (R$) antes de calcular o score de priorização.
@@ -446,10 +452,10 @@ export default function ParametrizacaoPage() {
             </button>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Alocação em Projetos config */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+      {isAdmin && <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Alocação em Projetos</h2>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           Define quanto do tempo útil diário de cada funcionário é dedicado a projetos.
@@ -510,7 +516,7 @@ export default function ParametrizacaoPage() {
             </button>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Area selector */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
