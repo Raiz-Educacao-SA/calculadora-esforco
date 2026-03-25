@@ -109,6 +109,9 @@ export default function FeriasPage() {
   // View mode
   const [viewMode, setViewMode] = useState<'lista' | 'timeline'>('lista')
 
+  // Filtro por área
+  const [filterArea, setFilterArea] = useState('')
+
   // Timeline navigation
   const [windowStart, setWindowStart] = useState<Date>(() => startOfWeek(new Date()))
   const weeks = Array.from({ length: WEEKS_WINDOW }, (_, i) => addWeeks(windowStart, i))
@@ -265,8 +268,20 @@ export default function FeriasPage() {
   const isOperator = session?.role === 'OPERATOR'
   const canRegister = isAdmin || (isOperator && !!meuFuncionario)
 
-  // Timeline: funcionários ordenados por nome
-  const funcionariosOrdenados = [...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+  // Áreas únicas para o filtro
+  const areasUnicas = Array.from(
+    new Set(funcionarios.map((f) => f.area?.nome).filter(Boolean))
+  ).sort((a, b) => (a as string).localeCompare(b as string, 'pt-BR')) as string[]
+
+  // Lista de férias filtrada por área
+  const feriasFiltradas = filterArea
+    ? ferias.filter((f) => f.funcionario.area?.nome === filterArea)
+    : ferias
+
+  // Timeline: funcionários ordenados por nome, filtrados por área
+  const funcionariosOrdenados = [...funcionarios]
+    .filter((f) => !filterArea || f.area?.nome === filterArea)
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
 
   // Contagem de funcionários com férias no período da timeline
   const funcionariosComFeriasNoPeriodo = funcionariosOrdenados.filter((func) =>
@@ -334,6 +349,30 @@ export default function FeriasPage() {
         </div>
       )}
 
+      {/* Filtros */}
+      {areasUnicas.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={filterArea}
+            onChange={(e) => setFilterArea(e.target.value)}
+            className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1.5 text-sm text-gray-900 dark:text-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+          >
+            <option value="">Todas as áreas</option>
+            {areasUnicas.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+          {filterArea && (
+            <button
+              onClick={() => setFilterArea('')}
+              className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              Limpar filtro
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ---- VISTA: LISTA ---- */}
       {viewMode === 'lista' && (
         <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
@@ -345,13 +384,13 @@ export default function FeriasPage() {
               </svg>
               Carregando...
             </div>
-          ) : ferias.length === 0 ? (
+          ) : feriasFiltradas.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400">
               <svg className="mb-3 h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <p className="text-sm">Nenhum período de férias registrado.</p>
-              {canRegister && (
+              <p className="text-sm">{filterArea ? 'Nenhuma férias encontrada para esta área.' : 'Nenhum período de férias registrado.'}</p>
+              {canRegister && !filterArea && (
                 <button onClick={openCreate} className="mt-3 text-sm text-teal-600 hover:underline">
                   Registrar primeiro período
                 </button>
@@ -361,7 +400,7 @@ export default function FeriasPage() {
             <>
               {/* Mobile card list */}
               <ul className="divide-y divide-gray-100 dark:divide-gray-700 sm:hidden">
-                {ferias.map((f) => (
+                {feriasFiltradas.map((f) => (
                   <li key={f.id} className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -401,7 +440,7 @@ export default function FeriasPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                  {ferias.map((f) => (
+                  {feriasFiltradas.map((f) => (
                     <tr key={f.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{f.funcionario.nome}</td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{f.funcionario.area?.nome ?? '—'}</td>
