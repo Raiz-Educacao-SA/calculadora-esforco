@@ -264,6 +264,13 @@ export default function FeriasPage() {
     }
   }
 
+  const goToTimeline = (f: Ferias) => {
+    const inicio = new Date(f.dataInicio)
+    inicio.setHours(12)
+    setWindowStart(startOfWeek(inicio))
+    setViewMode('timeline')
+  }
+
   const isAdmin = session?.role === 'ADMIN'
   const isOperator = session?.role === 'OPERATOR'
   const canRegister = isAdmin || (isOperator && !!meuFuncionario)
@@ -417,12 +424,15 @@ export default function FeriasPage() {
                         )}
                       </div>
                     </div>
-                    {canEditFerias(f) && (
-                      <div className="flex gap-2">
-                        <button onClick={() => openEdit(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                        <button onClick={() => setDeleteConfirm(f.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      <button onClick={() => goToTimeline(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-teal-600 border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/30">Ver na timeline</button>
+                      {canEditFerias(f) && (
+                        <>
+                          <button onClick={() => openEdit(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
+                          <button onClick={() => setDeleteConfirm(f.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                        </>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -454,12 +464,15 @@ export default function FeriasPage() {
                         {f.observacao ?? '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {canEditFerias(f) && (
-                          <div className="inline-flex items-center gap-2">
-                            <button onClick={() => openEdit(f)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                            <button onClick={() => setDeleteConfirm(f.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
-                          </div>
-                        )}
+                        <div className="inline-flex items-center gap-2">
+                          <button onClick={() => goToTimeline(f)} className="rounded px-2 py-1 text-xs font-medium text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30">Ver na timeline</button>
+                          {canEditFerias(f) && (
+                            <>
+                              <button onClick={() => openEdit(f)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
+                              <button onClick={() => setDeleteConfirm(f.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
