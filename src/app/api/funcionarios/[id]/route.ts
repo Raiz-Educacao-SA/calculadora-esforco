@@ -10,12 +10,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       include: { area: { select: { id: true, nome: true } } },
     })
     if (!funcionario) {
-      return NextResponse.json({ error: 'Funcionário não encontrado' }, { status: 404 })
+      return NextResponse.json({ error: 'Colaborador não encontrado' }, { status: 404 })
     }
     return NextResponse.json(funcionario)
   } catch (error) {
     console.error('[GET /api/funcionarios/[id]]', error)
-    return NextResponse.json({ error: 'Erro ao buscar funcionário' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao buscar colaborador' }, { status: 500 })
   }
 }
 
@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[PUT /api/funcionarios/[id]]', error)
-    return NextResponse.json({ error: 'Erro ao atualizar funcionário' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao atualizar colaborador' }, { status: 500 })
   }
 }
 
@@ -71,12 +71,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     await prisma.funcionario.delete({ where: { id } })
 
-    return NextResponse.json({ message: 'Funcionário excluído com sucesso' })
+    return NextResponse.json({ message: 'Colaborador excluído com sucesso' })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[DELETE /api/funcionarios/[id]]', error)
-    return NextResponse.json({ error: 'Erro ao excluir funcionário' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao excluir colaborador' }, { status: 500 })
   }
 }

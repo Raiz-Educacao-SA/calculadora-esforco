@@ -458,7 +458,7 @@ export default function ParametrizacaoPage() {
       {isAdmin && <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Alocação em Projetos</h2>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-          Define quanto do tempo útil diário de cada funcionário é dedicado a projetos.
+          Define quanto do tempo útil diário de cada colaborador é dedicado a projetos.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-40">

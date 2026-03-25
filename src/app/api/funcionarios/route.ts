@@ -13,7 +13,7 @@ export async function GET() {
     return NextResponse.json(funcionarios)
   } catch (error) {
     console.error('[GET /api/funcionarios]', error)
-    return NextResponse.json({ error: 'Erro ao listar funcionários' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao listar colaboradores' }, { status: 500 })
   }
 }
 
@@ -44,6 +44,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[POST /api/funcionarios]', error)
-    return NextResponse.json({ error: 'Erro ao criar funcionário' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao criar colaborador' }, { status: 500 })
   }
 }

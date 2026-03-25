@@ -315,7 +315,7 @@ export default function AlocacaoPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.funcionarioId) { setFormError('Selecione um funcionário.'); return }
+    if (!form.funcionarioId) { setFormError('Selecione um colaborador.'); return }
     if (!form.titulo.trim()) { setFormError('Título é obrigatório.'); return }
     if (!form.dataInicio || !form.dataFim) { setFormError('Datas são obrigatórias.'); return }
     if (new Date(form.dataInicio) > new Date(form.dataFim)) { setFormError('Data início deve ser anterior à data fim.'); return }
@@ -474,7 +474,7 @@ export default function AlocacaoPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Funcionário</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Colaborador</label>
             <input
               type="text"
               value={filterNome}
@@ -524,10 +524,10 @@ export default function AlocacaoPage() {
             <svg className="mb-3 h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <p className="text-sm">{funcionarios.length === 0 ? 'Nenhum funcionário ativo cadastrado.' : 'Nenhum funcionário encontrado com os filtros aplicados.'}</p>
+            <p className="text-sm">{funcionarios.length === 0 ? 'Nenhum colaborador ativo cadastrado.' : 'Nenhum colaborador encontrado com os filtros aplicados.'}</p>
             {funcionarios.length === 0 && (
               <a href="/alocacao/funcionarios" className="mt-3 text-sm text-teal-600 hover:underline">
-                Cadastrar funcionários
+                Cadastrar colaboradores
               </a>
             )}
           </div>
@@ -536,7 +536,7 @@ export default function AlocacaoPage() {
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-700/50">
                 <th className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-700/50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 min-w-[180px]">
-                  Funcionário
+                  Colaborador
                 </th>
                 {weeks.map((w, i) => (
                   <th
@@ -554,6 +554,9 @@ export default function AlocacaoPage() {
                   <td className="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 border-r border-gray-100 dark:border-gray-700">
                     <p className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{f.nome}</p>
                     {f.cargo && <p className="text-xs text-gray-500 dark:text-gray-400">{f.cargo}</p>}
+                    {f.area && (
+                      <span className="text-xs text-teal-600 dark:text-teal-400 block leading-tight">{f.area.nome}</span>
+                    )}
                   </td>
                   {weeks.map((w, i) => {
                     const cellAlocacoes = getAlocacoesForCell(f.id, w)
@@ -621,7 +624,7 @@ export default function AlocacaoPage() {
             Carregando...
           </div>
         ) : funcionariosFiltrados.length === 0 ? (
-          <div className="text-center py-10 text-gray-400 text-sm">{funcionarios.length === 0 ? 'Nenhum funcionário ativo cadastrado.' : 'Nenhum funcionário encontrado com os filtros aplicados.'}</div>
+          <div className="text-center py-10 text-gray-400 text-sm">{funcionarios.length === 0 ? 'Nenhum colaborador ativo cadastrado.' : 'Nenhum colaborador encontrado com os filtros aplicados.'}</div>
         ) : (
           funcionariosFiltrados.map((f) => {
             const fAlocacoes = alocacoes.filter((a) => a.funcionarioId === f.id)
@@ -708,7 +711,7 @@ export default function AlocacaoPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Funcionário <span className="text-red-500">*</span>
+                    Colaborador <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={form.funcionarioId}

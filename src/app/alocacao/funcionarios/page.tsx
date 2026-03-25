@@ -64,7 +64,7 @@ export default function FuncionariosPage() {
       const json = await res.json()
       setFuncionarios(Array.isArray(json) ? json : [])
     } catch {
-      showError('Erro ao carregar funcionários.')
+      showError('Erro ao carregar colaboradores.')
     } finally {
       setLoading(false)
     }
@@ -134,7 +134,7 @@ export default function FuncionariosPage() {
       }
       closeForm()
       await fetchFuncionarios()
-      showSuccess(editItem ? 'Funcionário atualizado com sucesso.' : 'Funcionário criado com sucesso.')
+      showSuccess(editItem ? 'Colaborador atualizado com sucesso.' : 'Colaborador criado com sucesso.')
     } catch {
       setFormError('Erro de conexão. Tente novamente.')
     } finally {
@@ -152,7 +152,7 @@ export default function FuncionariosPage() {
       }
       setDeleteConfirm(null)
       await fetchFuncionarios()
-      showSuccess('Funcionário excluído com sucesso.')
+      showSuccess('Colaborador excluído com sucesso.')
     } catch {
       showError('Erro de conexão.')
     }
@@ -171,7 +171,7 @@ export default function FuncionariosPage() {
         return
       }
       await fetchFuncionarios()
-      showSuccess(`Funcionário ${!f.ativo ? 'ativado' : 'desativado'} com sucesso.`)
+      showSuccess(`Colaborador ${!f.ativo ? 'ativado' : 'desativado'} com sucesso.`)
     } catch {
       showError('Erro de conexão.')
     }
@@ -181,7 +181,7 @@ export default function FuncionariosPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Funcionários</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Colaboradores</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Gerencie os membros do time disponíveis para alocação.</p>
         </div>
         {isAdmin && (
@@ -192,7 +192,7 @@ export default function FuncionariosPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Novo Funcionário
+            Novo Colaborador
           </button>
         )}
       </div>
@@ -222,10 +222,10 @@ export default function FuncionariosPage() {
             <svg className="mb-3 h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <p className="text-sm">Nenhum funcionário cadastrado.</p>
+            <p className="text-sm">Nenhum colaborador cadastrado.</p>
             {isAdmin && (
               <button onClick={openCreate} className="mt-3 text-sm text-teal-600 hover:underline">
-                Cadastrar primeiro funcionário
+                Cadastrar primeiro colaborador
               </button>
             )}
           </div>
@@ -301,7 +301,7 @@ export default function FuncionariosPage() {
           <div className="w-full max-w-md rounded-lg bg-white dark:bg-gray-800 shadow-xl">
             <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editItem ? 'Editar Funcionário' : 'Novo Funcionário'}
+                {editItem ? 'Editar Colaborador' : 'Novo Colaborador'}
               </h2>
             </div>
             <form onSubmit={handleSubmit} noValidate>
@@ -321,7 +321,7 @@ export default function FuncionariosPage() {
                     value={form.nome}
                     onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
                     className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                    placeholder="Nome do funcionário"
+                    placeholder="Nome do colaborador"
                     maxLength={100}
                   />
                 </div>
@@ -417,7 +417,7 @@ export default function FuncionariosPage() {
             <div className="px-6 py-5">
               <h2 className="text-base font-semibold text-gray-900 dark:text-white">Confirmar exclusão</h2>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Tem certeza que deseja excluir este funcionário? Todas as alocações associadas serão removidas.
+                Tem certeza que deseja excluir este colaborador? Todas as alocações associadas serão removidas.
               </p>
             </div>
             <div className="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 px-6 py-4">

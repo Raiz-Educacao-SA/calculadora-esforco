@@ -25,7 +25,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // OPERATOR can only edit ferias for their own funcionario
     if (session.role === ROLES.OPERATOR) {
       if (existing.funcionario.userId !== session.userId) {
-        return NextResponse.json({ error: 'Operador só pode editar férias do próprio funcionário' }, { status: 403 })
+        return NextResponse.json({ error: 'Operador só pode editar férias do próprio colaborador' }, { status: 403 })
       }
     }
 
@@ -88,7 +88,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     // OPERATOR can only delete ferias for their own funcionario
     if (session.role === ROLES.OPERATOR) {
       if (existing.funcionario.userId !== session.userId) {
-        return NextResponse.json({ error: 'Operador só pode excluir férias do próprio funcionário' }, { status: 403 })
+        return NextResponse.json({ error: 'Operador só pode excluir férias do próprio colaborador' }, { status: 403 })
       }
     }
 

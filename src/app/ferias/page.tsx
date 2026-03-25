@@ -206,7 +206,7 @@ export default function FeriasPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.funcionarioId) {
-      setFormError('Selecione um funcionário.')
+      setFormError('Selecione um colaborador.')
       return
     }
     if (!form.dataInicio || !form.dataFim) {
@@ -341,7 +341,7 @@ export default function FeriasPage() {
 
       {isOperator && !meuFuncionario && !loading && (
         <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 p-3 text-sm text-yellow-800 dark:text-yellow-300">
-          Seu perfil não está vinculado a um funcionário. Solicite ao administrador.
+          Seu perfil não está vinculado a um colaborador. Solicite ao administrador.
         </div>
       )}
 
@@ -441,7 +441,7 @@ export default function FeriasPage() {
               <table className="hidden sm:table min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Funcionário</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Colaborador</th>
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Área Técnica</th>
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Período</th>
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Duração</th>
@@ -534,14 +534,14 @@ export default function FeriasPage() {
                 <svg className="mb-3 h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <p className="text-sm">Nenhum funcionário ativo cadastrado.</p>
+                <p className="text-sm">Nenhum colaborador ativo cadastrado.</p>
               </div>
             ) : (
               <table className="min-w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-700/50">
                     <th className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-700/50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 min-w-[180px]">
-                      Funcionário
+                      Colaborador
                     </th>
                     {weeks.map((w, i) => (
                       <th
@@ -610,8 +610,8 @@ export default function FeriasPage() {
           {!loading && funcionariosOrdenados.length > 0 && (
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {funcionariosComFeriasNoPeriodo === 0
-                ? 'Nenhum funcionário com férias neste período.'
-                : `${funcionariosComFeriasNoPeriodo} funcionário${funcionariosComFeriasNoPeriodo > 1 ? 's' : ''} com férias neste período.`}
+                ? 'Nenhum colaborador com férias neste período.'
+                : `${funcionariosComFeriasNoPeriodo} colaborador${funcionariosComFeriasNoPeriodo > 1 ? 'es' : ''} com férias neste período.`}
             </p>
           )}
         </div>
@@ -635,7 +635,7 @@ export default function FeriasPage() {
                 )}
                 <div>
                   <label htmlFor="funcionarioId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Funcionário <span className="text-red-500">*</span>
+                    Colaborador <span className="text-red-500">*</span>
                   </label>
                   {isAdmin ? (
                     <select
@@ -657,7 +657,7 @@ export default function FeriasPage() {
                       className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 cursor-not-allowed"
                     />
                   ) : (
-                    <p className="mt-1 text-sm text-yellow-600 dark:text-yellow-400">Nenhum funcionário vinculado.</p>
+                    <p className="mt-1 text-sm text-yellow-600 dark:text-yellow-400">Nenhum colaborador vinculado.</p>
                   )}
                 </div>
                 <div>

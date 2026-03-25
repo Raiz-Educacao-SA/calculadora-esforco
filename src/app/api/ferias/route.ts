@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (session.role === ROLES.OPERATOR) {
       const funcionario = await prisma.funcionario.findUnique({ where: { id: funcionarioId } })
       if (!funcionario || funcionario.userId !== session.userId) {
-        return NextResponse.json({ error: 'Operador só pode registrar férias para o próprio funcionário' }, { status: 403 })
+        return NextResponse.json({ error: 'Operador só pode registrar férias para o próprio colaborador' }, { status: 403 })
       }
     }
 
