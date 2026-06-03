@@ -10,6 +10,13 @@ interface Area {
   nome: string
 }
 
+interface Funcionario {
+  id: string
+  nome: string
+  cargo: string | null
+  area: { id: string; nome: string } | null
+}
+
 interface BacklogItem {
   id: string
   posicao: number
@@ -21,7 +28,8 @@ interface BacklogItem {
   dataInicio: string | null
   previsaoConclusao: string | null
   responsaveis?: string[]
-  alocacoes?: { funcionario: { nome: string } }[]
+  responsavelId?: string | null
+  alocacoes?: { funcionario: { id: string; nome: string } }[]
   solicitacao: {
     titulo: string
     esforcoTotal: number | null
@@ -80,6 +88,7 @@ export default function BacklogPage() {
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<BacklogItem[]>([])
   const [areas, setAreas] = useState<Area[]>([])
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([])
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showFormula, setShowFormula] = useState(false)
@@ -101,6 +110,7 @@ export default function BacklogPage() {
   const [editStatus, setEditStatus] = useState<string>('')
   const [editDataInicio, setEditDataInicio] = useState('')
   const [editPrevisao, setEditPrevisao] = useState('')
+  const [editResponsavelId, setEditResponsavelId] = useState<string>('')
   const [saving, setSaving] = useState(false)
 
   const showSuccess = (msg: string) => { setSuccess(msg); setTimeout(() => setSuccess(''), 3000) }
@@ -134,7 +144,15 @@ export default function BacklogPage() {
         setAreas(Array.isArray(json) ? json : [])
       } catch { /* not critical */ }
     }
+    async function fetchFuncionarios() {
+      try {
+        const res = await fetch('/api/funcionarios')
+        const json = await res.json()
+        setFuncionarios(Array.isArray(json) ? json : [])
+      } catch { /* not critical */ }
+    }
     fetchAreas()
+    fetchFuncionarios()
   }, [])
 
   useEffect(() => {
@@ -201,6 +219,7 @@ export default function BacklogPage() {
     setEditStatus(item.status)
     setEditDataInicio(toInputDate(item.dataInicio))
     setEditPrevisao(toInputDate(item.previsaoConclusao))
+    setEditResponsavelId(item.responsavelId ?? '')
   }
 
   const cancelEditing = () => {
@@ -210,14 +229,23 @@ export default function BacklogPage() {
   const saveEditing = async (id: string) => {
     setSaving(true)
     try {
+      const item = items.find((i) => i.id === id)
+      const responsavelChanged = editResponsavelId !== (item?.responsavelId ?? '')
+
+      const body: Record<string, unknown> = {
+        status: editStatus,
+        dataInicio: editDataInicio || null,
+        previsaoConclusao: editPrevisao || null,
+      }
+
+      if (responsavelChanged) {
+        body.responsavelId = editResponsavelId || ''
+      }
+
       const res = await fetch(`/api/backlog/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: editStatus,
-          dataInicio: editDataInicio || null,
-          previsaoConclusao: editPrevisao || null,
-        }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const json = await res.json()
@@ -422,6 +450,13 @@ export default function BacklogPage() {
                         <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
                           {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                         </select>
+                        <div>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Responsável</label>
+                          <select value={editResponsavelId} onChange={(e) => setEditResponsavelId(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="">— Sem responsável —</option>
+                            {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome}{f.area ? ` (${f.area.nome})` : ''}</option>)}
+                          </select>
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Início</label>
@@ -487,8 +522,23 @@ export default function BacklogPage() {
                         <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                           {item.solicitacao?.zeevNumber ?? '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[120px] truncate whitespace-nowrap" title={item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : undefined}>
-                          {item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : '—'}
+                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[140px] whitespace-nowrap">
+                          {isEditing ? (
+                            <select
+                              value={editResponsavelId}
+                              onChange={(e) => setEditResponsavelId(e.target.value)}
+                              className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
+                            >
+                              <option value="">— Sem responsável —</option>
+                              {funcionarios.map((f) => (
+                                <option key={f.id} value={f.id}>{f.nome}{f.area ? ` (${f.area.nome})` : ''}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="truncate block" title={item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : undefined}>
+                              {item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : '—'}
+                            </span>
+                          )}
                         </td>
                         <td
                           className="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white max-w-[160px] truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"

@@ -5,6 +5,8 @@ import { makeEffortKey } from '@/lib/services/effort-calculator'
 import { logAudit } from '@/lib/services/audit'
 import type { ComponenteParaIA, CriterioParaIA } from '@/lib/ai/types'
 
+export const maxDuration = 60
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -167,6 +169,7 @@ export async function POST(
     })
   } catch (error) {
     console.error('[POST /api/solicitacoes/[id]/analisar]', error)
-    return NextResponse.json({ error: 'Erro ao analisar solicitação' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Erro desconhecido'
+    return NextResponse.json({ error: `Erro ao analisar solicitação: ${message}` }, { status: 500 })
   }
 }

@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         },
         alocacoes: {
           include: {
-            funcionario: { select: { nome: true } },
+            funcionario: { select: { id: true, nome: true } },
           },
         },
       },
@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       ...item,
       posicao: index + 1,
       responsaveis: item.alocacoes.map((a) => a.funcionario.nome),
+      responsavelId: item.alocacoes.length > 0 ? item.alocacoes[0].funcionario.id : null,
     }))
 
     return NextResponse.json(ranked)
