@@ -75,7 +75,7 @@ const positionLabel = (pos: number) => {
 
 function formatDateBR(dateStr: string | null): string {
   if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('pt-BR')
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(dateStr))
 }
 
 function toInputDate(dateStr: string | null): string {
@@ -126,7 +126,7 @@ export default function BacklogPage() {
       if (filterTipoGanho) params.set('tipoGanho', filterTipoGanho)
 
       const query = params.toString()
-      const res = await fetch(`/api/backlog${query ? `?${query}` : ''}`)
+      const res = await fetch(`/api/backlog${query ? `?${query}` : ''}`, { cache: 'no-store' })
       const json = await res.json()
       setItems(Array.isArray(json) ? json : [])
     } catch {
