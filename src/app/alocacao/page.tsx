@@ -112,12 +112,20 @@ function dateToInput(d: Date): string {
   return d.toISOString().split('T')[0]
 }
 
+/** Converte string de data da API (ISO UTC ou YYYY-MM-DD) para Date local sem offset.
+ *  Garante que "2026-06-07T00:00:00.000Z" seja tratado como 07/06 independente do timezone do browser. */
+function parseDateUTC(dateStr: string): Date {
+  const iso = dateStr.length === 10 ? dateStr : dateStr.substring(0, 10)
+  const [year, month, day] = iso.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 function overlapsWeek(alocacao: Alocacao, weekStart: Date): boolean {
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 6)
   weekEnd.setHours(23, 59, 59, 999)
-  const aStart = new Date(alocacao.dataInicio)
-  const aEnd = new Date(alocacao.dataFim)
+  const aStart = parseDateUTC(alocacao.dataInicio)
+  const aEnd = parseDateUTC(alocacao.dataFim)
   return aStart <= weekEnd && aEnd >= weekStart
 }
 
@@ -132,15 +140,15 @@ function calcularHorasDisponiveis(
   excludeId?: string
 ): number {
   const horasEfetivas = alocacaoConfig.horasDiarias * (alocacaoConfig.percentualAlocacao / 100)
-  const inicio = new Date(dataInicio)
-  const fim = new Date(dataFim)
+  const inicio = parseDateUTC(dataInicio)
+  const fim = parseDateUTC(dataFim)
   const horasJaAlocadas = alocacoes
     .filter(
       (a) =>
         a.funcionarioId === funcionarioId &&
         a.id !== excludeId &&
-        new Date(a.dataInicio) <= fim &&
-        new Date(a.dataFim) >= inicio
+        parseDateUTC(a.dataInicio) <= fim &&
+        parseDateUTC(a.dataFim) >= inicio
     )
     .reduce((sum, a) => sum + (a.horasDiarias ?? 0), 0)
   return Math.max(0, horasEfetivas - horasJaAlocadas)
@@ -258,8 +266,8 @@ export default function AlocacaoPage() {
 
   const openEdit = (alocacao: Alocacao) => {
     setEditAlocacao(alocacao)
-    const ds = dateToInput(new Date(alocacao.dataInicio))
-    const de = dateToInput(new Date(alocacao.dataFim))
+    const ds = alocacao.dataInicio.substring(0, 10)
+    const de = alocacao.dataFim.substring(0, 10)
     setForm({
       funcionarioId: alocacao.funcionarioId,
       backlogItemId: alocacao.backlogItemId ?? '',
@@ -659,7 +667,7 @@ export default function AlocacaoPage() {
                               <p className="text-xs text-gray-500 dark:text-gray-400">{a.areaSolicitante}</p>
                             )}
                             <p className="text-xs text-gray-400 mt-0.5">
-                              {new Date(a.dataInicio).toLocaleDateString('pt-BR')} – {new Date(a.dataFim).toLocaleDateString('pt-BR')}
+                              {parseDateUTC(a.dataInicio).toLocaleDateString('pt-BR')} – {parseDateUTC(a.dataFim).toLocaleDateString('pt-BR')}
                             </p>
                             {a.horasDiarias && (
                               <p className="text-xs text-teal-600 dark:text-teal-400">{a.horasDiarias}h/dia</p>
