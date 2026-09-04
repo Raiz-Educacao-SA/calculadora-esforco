@@ -305,8 +305,10 @@ export default function BacklogPage() {
     }
   }
 
-  const handleDragStart = (id: string) => {
+  const handleDragStart = (event: DragEvent, id: string) => {
     if (isViewer || editingId) return
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', id)
     setDraggedId(id)
   }
 
@@ -316,14 +318,17 @@ export default function BacklogPage() {
     setDragOverId(id)
   }
 
-  const handleDrop = (targetId: string) => {
-    if (isViewer || !draggedId || draggedId === targetId) {
+  const handleDrop = (event: DragEvent, targetId: string) => {
+    event.preventDefault()
+    const sourceId = draggedId ?? event.dataTransfer.getData('text/plain')
+
+    if (isViewer || !sourceId || sourceId === targetId) {
       setDraggedId(null)
       setDragOverId(null)
       return
     }
 
-    const fromIndex = activeItems.findIndex((item) => item.id === draggedId)
+    const fromIndex = activeItems.findIndex((item) => item.id === sourceId)
     const toIndex = activeItems.findIndex((item) => item.id === targetId)
 
     if (fromIndex < 0 || toIndex < 0) {
@@ -552,9 +557,9 @@ export default function BacklogPage() {
                     )}
                     <li
                       draggable={!isViewer && !isEditing && !isConcluded}
-                      onDragStart={() => handleDragStart(item.id)}
+                      onDragStart={(event) => handleDragStart(event, item.id)}
                       onDragOver={(event) => handleDragOver(event, item.id)}
-                      onDrop={() => handleDrop(item.id)}
+                      onDrop={(event) => handleDrop(event, item.id)}
                       onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
                       className={`p-4 space-y-3${isConcluded ? ' opacity-60' : ''}${draggedId === item.id ? ' bg-teal-50 dark:bg-teal-900/20' : ''}${dragOverId === item.id ? ' ring-2 ring-teal-400' : ''}`}
                     >
@@ -563,7 +568,12 @@ export default function BacklogPage() {
                         {!isViewer && (
                           <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0" />
                         )}
-                        <span className={`text-base shrink-0 ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing' : ''}`} title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}>
+                        <span
+                          draggable={!isViewer && !isEditing && !isConcluded}
+                          onDragStart={(event) => handleDragStart(event, item.id)}
+                          className={`text-base shrink-0 ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+                          title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}
+                        >
                           {isConcluded ? '—' : positionLabel(item.posicao ?? 0)}
                         </span>
                         <button
@@ -666,17 +676,25 @@ export default function BacklogPage() {
                         )}
                         <tr
                           draggable={!isViewer && !isEditing && !isConcluded}
-                          onDragStart={() => handleDragStart(item.id)}
+                          onDragStart={(event) => handleDragStart(event, item.id)}
                           onDragOver={(event) => handleDragOver(event, item.id)}
-                          onDrop={() => handleDrop(item.id)}
+                          onDrop={(event) => handleDrop(event, item.id)}
                           onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
                           className={`hover:bg-gray-50 dark:hover:bg-gray-700${isConcluded ? ' opacity-60' : ''}${draggedId === item.id ? ' bg-teal-50 dark:bg-teal-900/20' : ''}${dragOverId === item.id ? ' ring-2 ring-inset ring-teal-400' : ''}`}
                         >
                         <td className="px-2 py-2 w-8">
                           <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} disabled={isViewer} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed" />
                         </td>
-                        <td className={`px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing' : ''}`} title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}>
-                          {isConcluded ? '—' : positionLabel(item.posicao ?? 0)}
+                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          <span
+                            draggable={!isViewer && !isEditing && !isConcluded}
+                            onDragStart={(event) => handleDragStart(event, item.id)}
+                            className={`inline-flex min-w-6 items-center gap-1 ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+                            title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}
+                          >
+                            <span className="text-gray-400 dark:text-gray-500">::</span>
+                            <span>{isConcluded ? '—' : positionLabel(item.posicao ?? 0)}</span>
+                          </span>
                         </td>
                         <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                           {item.solicitacao?.zeevNumber ?? '—'}
