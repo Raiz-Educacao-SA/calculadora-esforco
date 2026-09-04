@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
     if (tipoGanho) where.tipoGanho = tipoGanho
     if (areaId) where.solicitacao = { areaId }
 
+    await rebalancePrioritization()
+
     const items = await prisma.backlogItem.findMany({
       where,
       include: {
@@ -40,16 +42,19 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { scorePriorizacao: 'desc' },
+      orderBy: [
+        { posicaoManual: { sort: 'asc', nulls: 'last' } },
+        { scorePriorizacao: 'desc' },
+        { createdAt: 'asc' },
+      ],
     })
 
     const activeItems = items.filter((item) => !INACTIVE_BACKLOG_STATUSES.includes(item.status))
     const inactiveItems = items.filter((item) => INACTIVE_BACKLOG_STATUSES.includes(item.status))
-    const activePositionMap = new Map(activeItems.map((item, index) => [item.id, index + 1]))
 
     const ranked = [...activeItems, ...inactiveItems].map((item) => ({
       ...item,
-      posicao: activePositionMap.get(item.id) ?? null,
+      posicao: INACTIVE_BACKLOG_STATUSES.includes(item.status) ? null : item.posicaoManual,
       responsaveis: item.alocacoes.map((a) => a.funcionario.nome),
       responsavelId: item.alocacoes.length > 0 ? item.alocacoes[0].funcionario.id : null,
     }))

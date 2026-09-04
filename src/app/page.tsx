@@ -194,7 +194,7 @@ export default function DashboardPage() {
             </ul>
           </div>
           <p className="text-xs text-teal-700 dark:text-teal-400">
-            Quanto maior o score, maior a relação ganho/esforço e mais prioritária a demanda.
+            Quanto maior o score, maior a relação ganho/esforço. A ordem oficial pode ser ajustada manualmente pela priorização da diretoria.
           </p>
         </div>
       </details>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
       {/* Top 5 Priorities */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">Top 5 Prioridades</h2>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">As demandas com maior score de priorização.</p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">As demandas na ordem oficial de priorização.</p>
 
         {top5.length === 0 ? (
           <div className="mt-6 flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">

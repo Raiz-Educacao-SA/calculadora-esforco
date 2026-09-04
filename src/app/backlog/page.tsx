@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useState, useEffect, useCallback, Fragment, type DragEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -43,6 +43,13 @@ interface BacklogItem {
 }
 
 type BacklogStatus = 'NAO_INICIADO' | 'PRIORIZADO' | 'EM_ANDAMENTO' | 'CONCLUIDO' | 'CANCELADO'
+
+interface PendingReprioritization {
+  orderedIds: string[]
+  fromPosition: number | null
+  toPosition: number | null
+  title: string
+}
 
 const GAIN_TYPE_LABELS: Record<string, string> = {
   REDUCAO_CUSTO: 'Redução de Custo',
@@ -93,6 +100,7 @@ export default function BacklogPage() {
   const [success, setSuccess] = useState('')
   const [showFormula, setShowFormula] = useState(false)
   const [isViewer, setIsViewer] = useState(false)
+  const [currentUserName, setCurrentUserName] = useState('')
 
   const [filterArea, setFilterArea] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -112,6 +120,16 @@ export default function BacklogPage() {
   const [editPrevisao, setEditPrevisao] = useState('')
   const [editResponsavelId, setEditResponsavelId] = useState<string>('')
   const [saving, setSaving] = useState(false)
+
+  // Reprioritization
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [pendingReprioritization, setPendingReprioritization] =
+    useState<PendingReprioritization | null>(null)
+  const [reprioritizationRequester, setReprioritizationRequester] = useState('')
+  const [reprioritizationReason, setReprioritizationReason] = useState('')
+  const [reprioritizationOwner, setReprioritizationOwner] = useState('')
+  const [reprioritizing, setReprioritizing] = useState(false)
 
   const showSuccess = (msg: string) => { setSuccess(msg); setTimeout(() => setSuccess(''), 3000) }
   const showError = (msg: string) => { setError(msg); setTimeout(() => setError(''), 5000) }
@@ -158,7 +176,14 @@ export default function BacklogPage() {
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (data?.role === 'VIEWER') setIsViewer(true) })
+      .then((data) => {
+        if (data?.role === 'VIEWER') setIsViewer(true)
+        if (data?.nome || data?.email) {
+          const userName = data.nome ?? data.email
+          setCurrentUserName(userName)
+          setReprioritizationOwner(userName)
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -186,7 +211,17 @@ export default function BacklogPage() {
   const concludedItems = filteredItems.filter(
     (item) => item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
   )
-  const activePositionMap = new Map(activeItems.map((item, index) => [item.id, index + 1]))
+
+  const activeDisplayItems = pendingReprioritization
+    ? [
+        ...pendingReprioritization.orderedIds
+          .map((id) => activeItems.find((item) => item.id === id))
+          .filter((item): item is BacklogItem => Boolean(item)),
+        ...activeItems.filter((item) => !pendingReprioritization.orderedIds.includes(item.id)),
+      ]
+    : activeItems
+
+  const visibleItems = [...activeDisplayItems, ...concludedItems]
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -270,12 +305,95 @@ export default function BacklogPage() {
     }
   }
 
+  const handleDragStart = (id: string) => {
+    if (isViewer || editingId) return
+    setDraggedId(id)
+  }
+
+  const handleDragOver = (event: DragEvent, id: string) => {
+    if (isViewer || !draggedId || draggedId === id) return
+    event.preventDefault()
+    setDragOverId(id)
+  }
+
+  const handleDrop = (targetId: string) => {
+    if (isViewer || !draggedId || draggedId === targetId) {
+      setDraggedId(null)
+      setDragOverId(null)
+      return
+    }
+
+    const fromIndex = activeItems.findIndex((item) => item.id === draggedId)
+    const toIndex = activeItems.findIndex((item) => item.id === targetId)
+
+    if (fromIndex < 0 || toIndex < 0) {
+      setDraggedId(null)
+      setDragOverId(null)
+      return
+    }
+
+    const reordered = [...activeItems]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+
+    setPendingReprioritization({
+      orderedIds: reordered.map((item) => item.id),
+      fromPosition: moved.posicao,
+      toPosition: activeItems[toIndex]?.posicao ?? null,
+      title: moved.solicitacao?.titulo ?? 'Demanda do backlog',
+    })
+    setReprioritizationRequester('')
+    setReprioritizationReason('')
+    setReprioritizationOwner(currentUserName)
+    setDraggedId(null)
+    setDragOverId(null)
+  }
+
+  const cancelReprioritization = () => {
+    setPendingReprioritization(null)
+    setReprioritizationRequester('')
+    setReprioritizationReason('')
+    setReprioritizationOwner(currentUserName)
+  }
+
+  const confirmReprioritization = async () => {
+    if (!pendingReprioritization) return
+
+    setReprioritizing(true)
+    try {
+      const res = await fetch('/api/backlog/repriorizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderedIds: pendingReprioritization.orderedIds,
+          solicitantePriorizacao: reprioritizationRequester,
+          justificativa: reprioritizationReason,
+          responsavelRepriorizacao: reprioritizationOwner,
+        }),
+      })
+      const json = await res.json()
+
+      if (!res.ok) {
+        showError(json.error ?? 'Erro ao repriorizar backlog.')
+        return
+      }
+
+      setPendingReprioritization(null)
+      await fetchBacklog()
+      showSuccess(json.message ?? 'Backlog repriorizado com sucesso.')
+    } catch {
+      showError('Erro de conexão.')
+    } finally {
+      setReprioritizing(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Backlog Priorizado</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Lista de demandas ordenadas por score de priorização.
+          Lista de demandas ordenadas pela priorização oficial; arraste itens ativos para repriorizar.
         </p>
       </div>
 
@@ -324,7 +442,7 @@ export default function BacklogPage() {
             </div>
             <p className="text-xs text-teal-700 dark:text-teal-400">
               Quanto maior o score, maior a relação ganho/esforço e mais prioritária a demanda.
-              Demandas com score mais alto devem ser executadas primeiro.
+              O score apoia a decisão, mas a ordem oficial pode ser ajustada manualmente pela priorização da diretoria.
             </p>
           </div>
         )}
@@ -422,24 +540,31 @@ export default function BacklogPage() {
           <>
             {/* Mobile card list */}
             <ul className="divide-y divide-gray-100 dark:divide-gray-700 md:hidden">
-              {[...activeItems, ...concludedItems].map((item, index) => {
+              {visibleItems.map((item, index) => {
                 const isEditing = editingId === item.id
                 const isConcluded = item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
                 return (
                   <Fragment key={item.id}>
-                    {index === activeItems.length && concludedItems.length > 0 && activeItems.length > 0 && (
+                    {index === activeDisplayItems.length && concludedItems.length > 0 && activeDisplayItems.length > 0 && (
                       <li className="py-2 px-4 bg-gray-50 dark:bg-gray-700/50">
                         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Concluídas / Canceladas</span>
                       </li>
                     )}
-                    <li className={`p-4 space-y-3${isConcluded ? ' opacity-60' : ''}`}>
+                    <li
+                      draggable={!isViewer && !isEditing && !isConcluded}
+                      onDragStart={() => handleDragStart(item.id)}
+                      onDragOver={(event) => handleDragOver(event, item.id)}
+                      onDrop={() => handleDrop(item.id)}
+                      onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
+                      className={`p-4 space-y-3${isConcluded ? ' opacity-60' : ''}${draggedId === item.id ? ' bg-teal-50 dark:bg-teal-900/20' : ''}${dragOverId === item.id ? ' ring-2 ring-teal-400' : ''}`}
+                    >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         {!isViewer && (
                           <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0" />
                         )}
-                        <span className="text-base shrink-0">
-                          {isConcluded ? '—' : positionLabel(activePositionMap.get(item.id) ?? item.posicao ?? 0)}
+                        <span className={`text-base shrink-0 ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing' : ''}`} title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}>
+                          {isConcluded ? '—' : positionLabel(item.posicao ?? 0)}
                         </span>
                         <button
                           onClick={() => router.push(`/backlog/${item.id}`)}
@@ -527,24 +652,31 @@ export default function BacklogPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                  {[...activeItems, ...concludedItems].map((item, index) => {
+                  {visibleItems.map((item, index) => {
                     const isEditing = editingId === item.id
                     const isConcluded = item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
                     return (
                       <Fragment key={item.id}>
-                        {index === activeItems.length && concludedItems.length > 0 && activeItems.length > 0 && (
+                        {index === activeDisplayItems.length && concludedItems.length > 0 && activeDisplayItems.length > 0 && (
                           <tr>
                             <td colSpan={16} className="px-2 py-2 bg-gray-50 dark:bg-gray-700/50">
                               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Concluídas / Canceladas</span>
                             </td>
                           </tr>
                         )}
-                        <tr className={`hover:bg-gray-50 dark:hover:bg-gray-700${isConcluded ? ' opacity-60' : ''}`}>
+                        <tr
+                          draggable={!isViewer && !isEditing && !isConcluded}
+                          onDragStart={() => handleDragStart(item.id)}
+                          onDragOver={(event) => handleDragOver(event, item.id)}
+                          onDrop={() => handleDrop(item.id)}
+                          onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
+                          className={`hover:bg-gray-50 dark:hover:bg-gray-700${isConcluded ? ' opacity-60' : ''}${draggedId === item.id ? ' bg-teal-50 dark:bg-teal-900/20' : ''}${dragOverId === item.id ? ' ring-2 ring-inset ring-teal-400' : ''}`}
+                        >
                         <td className="px-2 py-2 w-8">
                           <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} disabled={isViewer} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed" />
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {isConcluded ? '—' : positionLabel(activePositionMap.get(item.id) ?? item.posicao ?? 0)}
+                        <td className={`px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing' : ''}`} title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}>
+                          {isConcluded ? '—' : positionLabel(item.posicao ?? 0)}
                         </td>
                         <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                           {item.solicitacao?.zeevNumber ?? '—'}
@@ -690,6 +822,77 @@ export default function BacklogPage() {
           </>
         )}
       </div>
+
+      {/* Reprioritization Confirmation */}
+      {pendingReprioritization && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-lg bg-white dark:bg-gray-800 shadow-xl">
+            <div className="px-6 py-5">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Justificar repriorização</h2>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                {pendingReprioritization.title} saiu da posição {pendingReprioritization.fromPosition ?? '—'} para {pendingReprioritization.toPosition ?? '—'}.
+              </p>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="reprioritization-requester" className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    Solicitante da priorização
+                  </label>
+                  <input
+                    id="reprioritization-requester"
+                    value={reprioritizationRequester}
+                    onChange={(event) => setReprioritizationRequester(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="reprioritization-owner" className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    Responsável por repriorizar
+                  </label>
+                  <input
+                    id="reprioritization-owner"
+                    value={reprioritizationOwner}
+                    onChange={(event) => setReprioritizationOwner(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="reprioritization-reason" className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    Justificativa
+                  </label>
+                  <textarea
+                    id="reprioritization-reason"
+                    rows={4}
+                    value={reprioritizationReason}
+                    onChange={(event) => setReprioritizationReason(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+              <button
+                onClick={cancelReprioritization}
+                disabled={reprioritizing}
+                className="rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmReprioritization}
+                disabled={
+                  reprioritizing ||
+                  !reprioritizationRequester.trim() ||
+                  !reprioritizationOwner.trim() ||
+                  !reprioritizationReason.trim()
+                }
+                className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {reprioritizing ? 'Salvando...' : 'Confirmar priorização'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Batch Delete Confirmation */}
       {showBatchDelete && (

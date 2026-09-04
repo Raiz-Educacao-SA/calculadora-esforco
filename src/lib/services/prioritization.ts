@@ -1,28 +1,43 @@
 import { HOUR_BASED_GAIN_TYPES } from '@/lib/config/gain-weights'
 
 const MAX_PRIORIZADO = 5
+const INACTIVE_BACKLOG_STATUSES = ['CONCLUIDO', 'CANCELADO']
 
 export async function rebalancePrioritization(): Promise<number> {
   const { prisma } = await import('@/lib/prisma')
   const items = await prisma.backlogItem.findMany({
-    where: { status: { in: ['PRIORIZADO', 'NAO_INICIADO'] } },
-    orderBy: { scorePriorizacao: 'desc' },
-    select: { id: true, status: true },
+    where: { status: { notIn: INACTIVE_BACKLOG_STATUSES } },
+    orderBy: [
+      { posicaoManual: { sort: 'asc', nulls: 'last' } },
+      { scorePriorizacao: 'desc' },
+      { createdAt: 'asc' },
+    ],
+    select: { id: true, status: true, posicaoManual: true },
   })
 
-  const updates: Array<{ id: string; newStatus: string }> = []
+  const updates: Array<{ id: string; newStatus?: string; posicaoManual: number }> = []
 
   items.forEach((item, index) => {
     const expectedStatus = index < MAX_PRIORIZADO ? 'PRIORIZADO' : 'NAO_INICIADO'
-    if (item.status !== expectedStatus) {
-      updates.push({ id: item.id, newStatus: expectedStatus })
+    const expectedPosition = index + 1
+    const shouldAutoUpdateStatus = item.status === 'PRIORIZADO' || item.status === 'NAO_INICIADO'
+    const nextStatus = shouldAutoUpdateStatus ? expectedStatus : undefined
+
+    if ((nextStatus && item.status !== nextStatus) || item.posicaoManual !== expectedPosition) {
+      updates.push({ id: item.id, newStatus: nextStatus, posicaoManual: expectedPosition })
     }
   })
 
   if (updates.length > 0) {
     await Promise.all(
-      updates.map(({ id, newStatus }) =>
-        prisma.backlogItem.update({ where: { id }, data: { status: newStatus } })
+      updates.map(({ id, newStatus, posicaoManual }) =>
+        prisma.backlogItem.update({
+          where: { id },
+          data: {
+            ...(newStatus ? { status: newStatus } : {}),
+            posicaoManual,
+          },
+        })
       )
     )
   }
@@ -79,6 +94,7 @@ export interface BacklogItemForRanking {
   tipoGanho: string
   valorGanho: number
   esforcoTotal: number
+  posicaoManual?: number | null
   ganhoNormalizado?: number
   scorePriorizacao?: number
 }
@@ -122,6 +138,13 @@ export function rankBacklog(
   })
 
   return scored
-    .sort((a, b) => b.scorePriorizacao - a.scorePriorizacao)
-    .map((item, index) => ({ ...item, posicao: index + 1 }))
+    .sort((a, b) => {
+      if (a.posicaoManual != null && b.posicaoManual != null) {
+        return a.posicaoManual - b.posicaoManual
+      }
+      if (a.posicaoManual != null) return -1
+      if (b.posicaoManual != null) return 1
+      return b.scorePriorizacao - a.scorePriorizacao
+    })
+    .map((item, index) => ({ ...item, posicao: item.posicaoManual ?? index + 1 }))
 }

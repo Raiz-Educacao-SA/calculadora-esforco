@@ -135,23 +135,40 @@ model SolicitacaoCriterio {
 }
 
 model BacklogItem {
-  id                String      @id @default(cuid())
-  solicitacaoId     String      @unique
+  id                String                   @id @default(cuid())
+  solicitacaoId     String                   @unique
+  posicaoManual     Int?
   tipoGanho         String
   valorGanho        Float
   unidadeGanho      String
   descricaoPremissa String?
   ganhoNormalizado  Float
   scorePriorizacao  Float
-  status            String      @default("NAO_INICIADO")
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  status            String                   @default("NAO_INICIADO")
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
   dataInicio        DateTime?
   previsaoConclusao DateTime?
-  solicitacao       Solicitacao @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade)
+  solicitacao       Solicitacao              @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade)
   alocacoes         Alocacao[]
+  repriorizacoes    BacklogReprioritizacao[]
 
+  @@index([posicaoManual])
   @@map("backlog_items")
+}
+
+model BacklogReprioritizacao {
+  id                       String      @id @default(cuid())
+  backlogItemId            String
+  posicaoAnterior          Int?
+  posicaoNova              Int
+  solicitantePriorizacao   String
+  justificativa            String
+  responsavelRepriorizacao String
+  createdAt                DateTime    @default(now())
+  backlogItem              BacklogItem @relation(fields: [backlogItemId], references: [id], onDelete: Cascade)
+
+  @@map("backlog_reprioritizacoes")
 }
 
 model GainWeightConfig {
@@ -224,16 +241,16 @@ model AuditLog {
 }
 
 model Funcionario {
-  id        String      @id @default(cuid())
+  id        String     @id @default(cuid())
   nome      String
   cargo     String?
-  ativo     Boolean     @default(true)
+  ativo     Boolean    @default(true)
   areaId    String?
-  userId    String?     @unique
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  area      Area?       @relation(fields: [areaId], references: [id])
-  user      User?       @relation(fields: [userId], references: [id])
+  userId    String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  area      Area?      @relation(fields: [areaId], references: [id])
+  user      User?      @relation(fields: [userId], references: [id])
   alocacoes Alocacao[]
   ferias    Ferias[]
 
@@ -288,8 +305,8 @@ model Fornecedor {
   email      String?
   telefone   String?
   site       String?
-  categoria  String?     // SOFTWARE | SERVICO | CONSULTORIA | HARDWARE | OUTRO
-  contato    String?     // nome do contato principal
+  categoria  String? // SOFTWARE | SERVICO | CONSULTORIA | HARDWARE | OUTRO
+  contato    String? // nome do contato principal
   observacao String?
   ativo      Boolean     @default(true)
   createdAt  DateTime    @default(now())
@@ -307,7 +324,7 @@ model Contrato {
   titulo        String
   descricao     String?
   valorTotal    Float?
-  periodicidade String?             // MENSAL | TRIMESTRAL | SEMESTRAL | ANUAL | PONTUAL
+  periodicidade String? // MENSAL | TRIMESTRAL | SEMESTRAL | ANUAL | PONTUAL
   dataInicio    DateTime?
   dataFim       DateTime?
   status        String              @default("ATIVO") // ATIVO | ENCERRADO | SUSPENSO | RENOVACAO
@@ -322,18 +339,18 @@ model Contrato {
 }
 
 model ContratoDocumento {
-  id           String   @id @default(cuid())
-  contratoId   String
-  nome         String
-  tipo         String?  // NF | ADITIVO | CERTIDAO | CONTRATO_ORIGINAL | OUTRO
-  url          String?
-  observacao   String?
-  arquivoNome  String?
-  arquivoTipo  String?
-  arquivoBytes Int?
+  id            String   @id @default(cuid())
+  contratoId    String
+  nome          String
+  tipo          String? // NF | ADITIVO | CERTIDAO | CONTRATO_ORIGINAL | OUTRO
+  url           String?
+  observacao    String?
+  arquivoNome   String?
+  arquivoTipo   String?
+  arquivoBytes  Int?
   arquivoBase64 String?
-  createdAt    DateTime @default(now())
-  contrato     Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  contrato      Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
 
   @@map("contrato_documentos")
 }

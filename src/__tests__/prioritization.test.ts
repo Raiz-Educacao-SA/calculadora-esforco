@@ -85,4 +85,17 @@ describe('rankBacklog', () => {
     expect(result[0].id).toBe('favored')
     expect(result[1].id).toBe('penalized')
   })
+
+  it('uses manual position before score when defined', () => {
+    const items: BacklogItemForRanking[] = [
+      makeItem({ id: 'higher-score', valorGanho: 1000, esforcoTotal: 10, posicaoManual: 2 }),
+      makeItem({ id: 'director-priority', valorGanho: 100, esforcoTotal: 10, posicaoManual: 1 }),
+    ]
+    const result = rankBacklog(items, DEFAULT_GAIN_WEIGHTS)
+
+    expect(result[0].id).toBe('director-priority')
+    expect(result[0].posicao).toBe(1)
+    expect(result[1].id).toBe('higher-score')
+    expect(result[1].posicao).toBe(2)
+  })
 })
