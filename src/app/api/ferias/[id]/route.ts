@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, ROLES, AuthError } from '@/lib/auth'
 
+function parseDateOnlyToUTCNoon(value: string): Date {
+  const [year, month, day] = value.split('T')[0].split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0))
+}
+
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession()
@@ -32,13 +37,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json()
     const { dataInicio, dataFim, observacao } = body
 
-    if (dataInicio && dataFim && new Date(dataFim) < new Date(dataInicio)) {
+    const inicio = dataInicio ? parseDateOnlyToUTCNoon(dataInicio) : null
+    const fim = dataFim ? parseDateOnlyToUTCNoon(dataFim) : null
+
+    if (inicio && fim && fim < inicio) {
       return NextResponse.json({ error: 'Data fim não pode ser anterior à data início' }, { status: 400 })
     }
 
     const data: Record<string, unknown> = {}
-    if (dataInicio !== undefined) data.dataInicio = new Date(dataInicio)
-    if (dataFim !== undefined) data.dataFim = new Date(dataFim)
+    if (dataInicio !== undefined) data.dataInicio = inicio
+    if (dataFim !== undefined) data.dataFim = fim
     if (observacao !== undefined) data.observacao = observacao?.trim() || null
 
     const ferias = await prisma.ferias.update({

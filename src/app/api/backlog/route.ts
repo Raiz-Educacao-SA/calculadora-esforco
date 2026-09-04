@@ -6,6 +6,14 @@ import { backlogItemSchema } from '@/lib/validators/schemas'
 import { DEFAULT_GAIN_WEIGHTS, DEFAULT_VALOR_HORA, GAIN_UNITS } from '@/lib/config/gain-weights'
 import { normalizeGain, calculatePrioritizationScore, rebalancePrioritization } from '@/lib/services/prioritization'
 
+const INACTIVE_BACKLOG_STATUSES = ['CONCLUIDO', 'CANCELADO']
+
+type BacklogWhereInput = {
+  status?: string
+  tipoGanho?: string
+  solicitacao?: { areaId: string }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -13,7 +21,7 @@ export async function GET(request: NextRequest) {
     const areaId = searchParams.get('areaId')
     const tipoGanho = searchParams.get('tipoGanho')
 
-    const where: any = {}
+    const where: BacklogWhereInput = {}
     if (status) where.status = status
     if (tipoGanho) where.tipoGanho = tipoGanho
     if (areaId) where.solicitacao = { areaId }
@@ -35,9 +43,13 @@ export async function GET(request: NextRequest) {
       orderBy: { scorePriorizacao: 'desc' },
     })
 
-    const ranked = items.map((item, index) => ({
+    const activeItems = items.filter((item) => !INACTIVE_BACKLOG_STATUSES.includes(item.status))
+    const inactiveItems = items.filter((item) => INACTIVE_BACKLOG_STATUSES.includes(item.status))
+    const activePositionMap = new Map(activeItems.map((item, index) => [item.id, index + 1]))
+
+    const ranked = [...activeItems, ...inactiveItems].map((item) => ({
       ...item,
-      posicao: index + 1,
+      posicao: activePositionMap.get(item.id) ?? null,
       responsaveis: item.alocacoes.map((a) => a.funcionario.nome),
       responsavelId: item.alocacoes.length > 0 ? item.alocacoes[0].funcionario.id : null,
     }))

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAIProvider } from '@/lib/ai'
+import { MockProvider } from '@/lib/ai/mock-provider'
 import { makeEffortKey } from '@/lib/services/effort-calculator'
 import { logAudit } from '@/lib/services/audit'
-import type { ComponenteParaIA, CriterioParaIA } from '@/lib/ai/types'
+import { recalculateBacklogItemForSolicitacao } from '@/lib/services/prioritization'
+import type { AIAnalysisRequest, AIAnalysisResponse, ComponenteParaIA, CriterioParaIA } from '@/lib/ai/types'
 
 export const maxDuration = 60
 
@@ -66,6 +68,24 @@ export async function POST(
       effortsMap.set(makeEffortKey(e.criterioId, e.complexidadeId, e.componenteId), e.valorEsforco)
     }
 
+    const lookupValorEsforco = (
+      criterioId: string,
+      complexidadeId: string,
+      componenteId?: string | null
+    ) => {
+      const exact = effortsMap.get(makeEffortKey(criterioId, complexidadeId, componenteId))
+      if (exact !== undefined) return exact
+
+      const generic = effortsMap.get(makeEffortKey(criterioId, complexidadeId, null))
+      if (generic !== undefined) return generic
+
+      return (
+        esforcos.find(
+          (e) => e.criterioId === criterioId && e.complexidadeId === complexidadeId
+        )?.valorEsforco ?? 0
+      )
+    }
+
     // 5. Build AI request
     const criteriosParaIA: CriterioParaIA[] = criteriosDB.map(c => ({
       id: c.id,
@@ -79,37 +99,83 @@ export async function POST(
       })),
     }))
 
-    // 6. Call AI provider
-    const provider = getAIProvider()
-    const analise = await provider.analyze({
+    // 6. Call AI provider. If the configured provider fails or returns nothing usable,
+    // fall back to the local heuristic provider so re-estimation remains available.
+    const analysisRequest: AIAnalysisRequest = {
       titulo: solicitacao.titulo,
       descricao: solicitacao.descricao,
       contexto: solicitacao.contexto ?? undefined,
       areaNome: solicitacao.area.nome,
       criterios: criteriosParaIA,
       componentes: componentesParaIA.length > 0 ? componentesParaIA : undefined,
-    })
+    }
+
+    let analise: AIAnalysisResponse
+    let usedFallback = false
+
+    try {
+      const provider = getAIProvider()
+      analise = await provider.analyze(analysisRequest)
+    } catch (providerError) {
+      console.warn(
+        `[analisar] Provider principal falhou para solicitação ${id}; usando fallback local:`,
+        providerError instanceof Error ? providerError.message : providerError
+      )
+      analise = await new MockProvider().analyze(analysisRequest)
+      usedFallback = true
+    }
+
+    if (analise.criteriosSugeridos.length === 0) {
+      console.warn(`[analisar] Provider retornou 0 critérios para solicitação ${id}; usando fallback local.`)
+      analise = await new MockProvider().analyze(analysisRequest)
+      usedFallback = true
+    }
 
     console.log(`[analisar] IA retornou ${analise.criteriosSugeridos.length} critérios para solicitação ${id}`)
 
-    // 7. Delete existing criterios for this solicitacao
-    await prisma.solicitacaoCriterio.deleteMany({
-      where: { solicitacaoId: id },
+    if (analise.criteriosSugeridos.length === 0) {
+      return NextResponse.json(
+        {
+          error: 'Não foi possível gerar uma estimativa porque não há critérios com complexidades válidas para esta área. Os critérios atuais foram preservados.',
+          analise: {
+            observacoes: analise.observacoes,
+            confiancaGeral: analise.confiancaGeral,
+          },
+        },
+        { status: 422 }
+      )
+    }
+
+    const sugestoesUnicas = Array.from(
+      new Map(
+        analise.criteriosSugeridos.map((sugestao) => [
+          `${sugestao.criterioId}:${sugestao.componenteId ?? 'null'}`,
+          sugestao,
+        ])
+      ).values()
+    )
+
+    const criteriosParaCriar = sugestoesUnicas.map((sugestao) => {
+      const valorEsforco = lookupValorEsforco(
+        sugestao.criterioId,
+        sugestao.complexidadeId,
+        sugestao.componenteId
+      )
+
+      return { sugestao, valorEsforco }
     })
 
-    // 8. Create new SolicitacaoCriterio records
-    let esforcoTotal = 0
-    const criteriosCriados = []
+    // 7-9. Replace criteria and update total atomically so the current memory is preserved if any write fails.
+    const { criteriosCriados, esforcoTotal } = await prisma.$transaction(async (tx) => {
+      await tx.solicitacaoCriterio.deleteMany({
+        where: { solicitacaoId: id },
+      })
 
-    for (const sugestao of analise.criteriosSugeridos) {
-      // Try with componenteId first, then fallback to null (generic effort)
-      const valorEsforco =
-        effortsMap.get(makeEffortKey(sugestao.criterioId, sugestao.complexidadeId, sugestao.componenteId)) ??
-        effortsMap.get(makeEffortKey(sugestao.criterioId, sugestao.complexidadeId, null)) ??
-        0
+      let total = 0
+      const created = []
 
-      try {
-        const record = await prisma.solicitacaoCriterio.create({
+      for (const { sugestao, valorEsforco } of criteriosParaCriar) {
+        const record = await tx.solicitacaoCriterio.create({
           data: {
             solicitacaoId: id,
             criterioId: sugestao.criterioId,
@@ -127,25 +193,22 @@ export async function POST(
           },
         })
 
-        esforcoTotal += valorEsforco
-        criteriosCriados.push(record)
-      } catch (createError) {
-        // Log but continue with remaining criteria (e.g. duplicate key)
-        console.warn(
-          `[analisar] Falha ao criar critério ${sugestao.criterioNome} (componente: ${sugestao.componenteNome ?? 'null'}):`,
-          createError instanceof Error ? createError.message : createError
-        )
+        total += valorEsforco
+        created.push(record)
       }
-    }
 
-    // 9. Update solicitacao
-    await prisma.solicitacao.update({
-      where: { id },
-      data: {
-        esforcoTotal,
-        status: 'ESTIMADO',
-      },
+      await tx.solicitacao.update({
+        where: { id },
+        data: {
+          esforcoTotal: total,
+          status: solicitacao.esforcoAprovado ? 'APROVADO' : 'ESTIMADO',
+        },
+      })
+
+      return { criteriosCriados: created, esforcoTotal: total }
     })
+
+    await recalculateBacklogItemForSolicitacao(id, esforcoTotal)
 
     // 10. Audit
     await logAudit({
@@ -156,6 +219,7 @@ export async function POST(
         esforcoTotal,
         criteriosCount: criteriosCriados.length,
         confiancaGeral: analise.confiancaGeral,
+        fallbackLocal: usedFallback,
       },
     })
 
@@ -163,6 +227,7 @@ export async function POST(
       analise: {
         observacoes: analise.observacoes,
         confiancaGeral: analise.confiancaGeral,
+        fallbackLocal: usedFallback,
       },
       criterios: criteriosCriados,
       esforcoTotal,

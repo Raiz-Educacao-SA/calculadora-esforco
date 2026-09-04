@@ -280,3 +280,78 @@ model AreaNegocio {
 
   @@map("areas_negocio")
 }
+
+model Fornecedor {
+  id         String      @id @default(cuid())
+  nome       String
+  cnpj       String?     @unique
+  email      String?
+  telefone   String?
+  site       String?
+  categoria  String?     // SOFTWARE | SERVICO | CONSULTORIA | HARDWARE | OUTRO
+  contato    String?     // nome do contato principal
+  observacao String?
+  ativo      Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  contratos  Contrato[]
+  pagamentos Pagamento[]
+
+  @@map("fornecedores")
+}
+
+model Contrato {
+  id            String              @id @default(cuid())
+  fornecedorId  String
+  numero        String?
+  titulo        String
+  descricao     String?
+  valorTotal    Float?
+  periodicidade String?             // MENSAL | TRIMESTRAL | SEMESTRAL | ANUAL | PONTUAL
+  dataInicio    DateTime?
+  dataFim       DateTime?
+  status        String              @default("ATIVO") // ATIVO | ENCERRADO | SUSPENSO | RENOVACAO
+  observacao    String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  fornecedor    Fornecedor          @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+  pagamentos    Pagamento[]
+  documentos    ContratoDocumento[]
+
+  @@map("contratos")
+}
+
+model ContratoDocumento {
+  id           String   @id @default(cuid())
+  contratoId   String
+  nome         String
+  tipo         String?  // NF | ADITIVO | CERTIDAO | CONTRATO_ORIGINAL | OUTRO
+  url          String?
+  observacao   String?
+  arquivoNome  String?
+  arquivoTipo  String?
+  arquivoBytes Int?
+  arquivoBase64 String?
+  createdAt    DateTime @default(now())
+  contrato     Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  @@map("contrato_documentos")
+}
+
+model Pagamento {
+  id             String     @id @default(cuid())
+  fornecedorId   String
+  contratoId     String?
+  descricao      String
+  valor          Float
+  dataVencimento DateTime
+  dataPagamento  DateTime?
+  status         String     @default("PENDENTE") // PENDENTE | PAGO | ATRASADO | CANCELADO
+  observacao     String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  fornecedor     Fornecedor @relation(fields: [fornecedorId], references: [id])
+  contrato       Contrato?  @relation(fields: [contratoId], references: [id], onDelete: SetNull)
+
+  @@map("pagamentos")
+}

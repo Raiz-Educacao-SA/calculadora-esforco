@@ -43,34 +43,55 @@ const emptyForm: FormData = {
   observacao: '',
 }
 
+function parseDateOnly(dateStr: string): Date {
+  const [datePart] = dateStr.split('T')
+  const [year, month, day] = datePart.split('-').map(Number)
+  return new Date(year, month - 1, day, 12, 0, 0, 0)
+}
+
+function normalizeDateOnly(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0)
+}
+
+function addDays(date: Date, days: number): Date {
+  const d = normalizeDateOnly(date)
+  d.setDate(d.getDate() + days)
+  return d
+}
+
+function toDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function toDayNumber(dateStr: string): number {
+  const [year, month, day] = dateStr.split('T')[0].split('-').map(Number)
+  return Date.UTC(year, month - 1, day) / (1000 * 60 * 60 * 24)
+}
+
 function calcDuracao(dataInicio: string, dataFim: string): number {
-  const d1 = new Date(dataInicio)
-  const d2 = new Date(dataFim)
-  const diff = d2.getTime() - d1.getTime()
-  return Math.round(diff / (1000 * 60 * 60 * 24)) + 1
+  return toDayNumber(dataFim) - toDayNumber(dataInicio) + 1
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+  return parseDateOnly(dateStr).toLocaleDateString('pt-BR')
 }
 
 // --- Timeline helpers ---
 const WEEKS_WINDOW = 12
 
 function startOfWeek(date: Date): Date {
-  const d = new Date(date)
+  const d = normalizeDateOnly(date)
   const day = d.getDay()
   const diff = day === 0 ? -6 : 1 - day
   d.setDate(d.getDate() + diff)
-  d.setHours(0, 0, 0, 0)
   return d
 }
 
 function addWeeks(date: Date, weeks: number): Date {
-  const d = new Date(date)
-  d.setDate(d.getDate() + weeks * 7)
-  return d
+  return addDays(date, weeks * 7)
 }
 
 function formatWeekLabel(start: Date): string {
@@ -83,12 +104,22 @@ function formatPeriodLabel(start: Date, end: Date): string {
   return `${startLabel} – ${endLabel}`
 }
 
-function overlapsWeek(ferias: Ferias, weekStart: Date, weekEnd: Date): boolean {
-  const inicio = new Date(ferias.dataInicio)
-  const fim = new Date(ferias.dataFim)
-  inicio.setHours(12)
-  fim.setHours(12)
-  return inicio <= weekEnd && fim >= weekStart
+function overlapsWeek(ferias: Ferias, weekStart: Date): boolean {
+  const weekStartDay = toDayNumber(toDateKey(weekStart))
+  const nextWeekStartDay = weekStartDay + 7
+  const inicioDay = toDayNumber(ferias.dataInicio)
+  const fimExclusiveDay = toDayNumber(ferias.dataFim) + 1
+
+  return inicioDay < nextWeekStartDay && fimExclusiveDay > weekStartDay
+}
+
+function overlapsPeriod(ferias: Ferias, periodStart: Date, periodEnd: Date): boolean {
+  const periodStartDay = toDayNumber(toDateKey(periodStart))
+  const periodEndExclusiveDay = toDayNumber(toDateKey(periodEnd)) + 1
+  const inicioDay = toDayNumber(ferias.dataInicio)
+  const fimExclusiveDay = toDayNumber(ferias.dataFim) + 1
+
+  return inicioDay < periodEndExclusiveDay && fimExclusiveDay > periodStartDay
 }
 
 export default function FeriasPage() {
@@ -115,7 +146,7 @@ export default function FeriasPage() {
   // Timeline navigation
   const [windowStart, setWindowStart] = useState<Date>(() => startOfWeek(new Date()))
   const weeks = Array.from({ length: WEEKS_WINDOW }, (_, i) => addWeeks(windowStart, i))
-  const periodEnd = addWeeks(weeks[WEEKS_WINDOW - 1], 1)
+  const periodEnd = addDays(weeks[WEEKS_WINDOW - 1], 6)
 
   const showSuccess = (msg: string) => {
     setSuccess(msg)
@@ -213,7 +244,7 @@ export default function FeriasPage() {
       setFormError('Data início e data fim são obrigatórias.')
       return
     }
-    if (new Date(form.dataFim) < new Date(form.dataInicio)) {
+    if (parseDateOnly(form.dataFim) < parseDateOnly(form.dataInicio)) {
       setFormError('Data fim não pode ser anterior à data início.')
       return
     }
@@ -265,8 +296,7 @@ export default function FeriasPage() {
   }
 
   const goToTimeline = (f: Ferias) => {
-    const inicio = new Date(f.dataInicio)
-    inicio.setHours(12)
+    const inicio = parseDateOnly(f.dataInicio)
     setWindowStart(startOfWeek(inicio))
     setViewMode('timeline')
   }
@@ -294,9 +324,7 @@ export default function FeriasPage() {
   const funcionariosComFeriasNoPeriodo = funcionariosOrdenados.filter((func) =>
     ferias.some((f) => {
       if (f.funcionarioId !== func.id) return false
-      const weekEnd = new Date(periodEnd)
-      weekEnd.setHours(23, 59, 59, 999)
-      return overlapsWeek(f, windowStart, weekEnd)
+      return overlapsPeriod(f, windowStart, periodEnd)
     })
   ).length
 
@@ -565,10 +593,7 @@ export default function FeriasPage() {
                           )}
                         </td>
                         {weeks.map((w, i) => {
-                          const weekEnd = new Date(w)
-                          weekEnd.setDate(weekEnd.getDate() + 6)
-                          weekEnd.setHours(23, 59, 59, 999)
-                          const feriasNaSemana = feriasDoFunc.filter((f) => overlapsWeek(f, w, weekEnd))
+                          const feriasNaSemana = feriasDoFunc.filter((f) => overlapsWeek(f, w))
 
                           return (
                             <td
@@ -684,7 +709,7 @@ export default function FeriasPage() {
                     className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                 </div>
-                {form.dataInicio && form.dataFim && new Date(form.dataFim) >= new Date(form.dataInicio) && (
+                {form.dataInicio && form.dataFim && parseDateOnly(form.dataFim) >= parseDateOnly(form.dataInicio) && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Duração: {calcDuracao(form.dataInicio, form.dataFim)} dias corridos
                   </p>

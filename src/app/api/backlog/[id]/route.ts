@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/services/audit'
 import { BACKLOG_STATUS } from '@/lib/config/status'
-import { rebalancePrioritization } from '@/lib/services/prioritization'
+import { DEFAULT_GAIN_WEIGHTS, DEFAULT_VALOR_HORA, GAIN_TYPES, GAIN_UNITS, type GainType } from '@/lib/config/gain-weights'
+import { calculatePrioritizationScore, normalizeGain, rebalancePrioritization } from '@/lib/services/prioritization'
 
 export async function GET(
   _request: NextRequest,
@@ -49,7 +50,7 @@ export async function PUT(
     const existing = await prisma.backlogItem.findUnique({
       where: { id },
       include: {
-        solicitacao: { select: { titulo: true, areaSolicitante: true } },
+        solicitacao: { select: { titulo: true, areaSolicitante: true, esforcoTotal: true } },
       },
     })
 
@@ -58,9 +59,21 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { status, dataInicio, previsaoConclusao, responsavelId } = body
+    const {
+      status,
+      dataInicio,
+      previsaoConclusao,
+      responsavelId,
+      tipoGanho,
+      valorGanho,
+      descricaoPremissa,
+    } = body
 
     const updateData: Record<string, unknown> = {}
+    const changingGain =
+      tipoGanho !== undefined ||
+      valorGanho !== undefined ||
+      descricaoPremissa !== undefined
 
     if (status) {
       const validStatuses = Object.values(BACKLOG_STATUS)
@@ -81,6 +94,53 @@ export async function PUT(
       updateData.previsaoConclusao = previsaoConclusao ? new Date(previsaoConclusao) : null
     }
 
+    if (changingGain) {
+      const nextTipoGanho = tipoGanho ?? existing.tipoGanho
+      const nextValorGanho = valorGanho !== undefined ? Number(valorGanho) : existing.valorGanho
+
+      if (!Object.values(GAIN_TYPES).includes(nextTipoGanho)) {
+        return NextResponse.json(
+          { error: 'Tipo de ganho invalido', valid: Object.values(GAIN_TYPES) },
+          { status: 400 }
+        )
+      }
+      const validTipoGanho = nextTipoGanho as GainType
+
+      if (!Number.isFinite(nextValorGanho) || nextValorGanho < 0) {
+        return NextResponse.json(
+          { error: 'Valor de ganho deve ser um numero maior ou igual a zero' },
+          { status: 400 }
+        )
+      }
+
+      const gainWeightConfig = await prisma.gainWeightConfig.findUnique({
+        where: { tipoGanho: nextTipoGanho },
+      })
+      const hourlyRateConfig = await prisma.hourlyRateConfig.findFirst()
+      const gainWeight = gainWeightConfig?.peso ?? DEFAULT_GAIN_WEIGHTS[validTipoGanho] ?? 1.0
+      const valorHora = hourlyRateConfig?.valorHora ?? DEFAULT_VALOR_HORA
+      const ganhoNormalizado = normalizeGain(
+        validTipoGanho,
+        nextValorGanho,
+        { [validTipoGanho]: gainWeight },
+        valorHora
+      )
+      const scorePriorizacao = calculatePrioritizationScore(
+        ganhoNormalizado,
+        existing.solicitacao?.esforcoTotal ?? 0
+      )
+
+      updateData.tipoGanho = validTipoGanho
+      updateData.valorGanho = nextValorGanho
+      updateData.unidadeGanho = GAIN_UNITS[validTipoGanho]
+      updateData.ganhoNormalizado = ganhoNormalizado
+      updateData.scorePriorizacao = scorePriorizacao
+
+      if (descricaoPremissa !== undefined) {
+        updateData.descricaoPremissa = descricaoPremissa?.trim() || null
+      }
+    }
+
     // responsavelId: '' means clear, a valid id means assign
     const changingResponsavel = responsavelId !== undefined
 
@@ -97,7 +157,17 @@ export async function PUT(
         entidade: 'BacklogItem',
         entidadeId: id,
         acao: 'UPDATE',
-        dadosAnteriores: { status: existing.status, dataInicio: existing.dataInicio, previsaoConclusao: existing.previsaoConclusao },
+        dadosAnteriores: {
+          status: existing.status,
+          dataInicio: existing.dataInicio,
+          previsaoConclusao: existing.previsaoConclusao,
+          tipoGanho: existing.tipoGanho,
+          valorGanho: existing.valorGanho,
+          unidadeGanho: existing.unidadeGanho,
+          descricaoPremissa: existing.descricaoPremissa,
+          ganhoNormalizado: existing.ganhoNormalizado,
+          scorePriorizacao: existing.scorePriorizacao,
+        },
         dadosNovos: updateData,
       })
     }
@@ -164,7 +234,7 @@ export async function PUT(
       }
     }
 
-    if (status && ['EM_ANDAMENTO', 'CONCLUIDO', 'CANCELADO'].includes(status)) {
+    if (changingGain || (status && ['EM_ANDAMENTO', 'CONCLUIDO', 'CANCELADO'].includes(status))) {
       await rebalancePrioritization()
       const rebalanced = await prisma.backlogItem.findUnique({ where: { id } })
       return NextResponse.json(rebalanced)

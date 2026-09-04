@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, ROLES, AuthError } from '@/lib/auth'
 
+function parseDateOnlyToUTCNoon(value: string): Date {
+  const [year, month, day] = value.split('T')[0].split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0))
+}
+
 export async function GET() {
   try {
     const session = await getSession()
@@ -51,7 +56,10 @@ export async function POST(request: NextRequest) {
     if (!dataInicio || !dataFim) {
       return NextResponse.json({ error: 'Data início e data fim são obrigatórias' }, { status: 400 })
     }
-    if (new Date(dataFim) < new Date(dataInicio)) {
+    const inicio = parseDateOnlyToUTCNoon(dataInicio)
+    const fim = parseDateOnlyToUTCNoon(dataFim)
+
+    if (fim < inicio) {
       return NextResponse.json({ error: 'Data fim não pode ser anterior à data início' }, { status: 400 })
     }
 
@@ -66,8 +74,8 @@ export async function POST(request: NextRequest) {
     const ferias = await prisma.ferias.create({
       data: {
         funcionarioId,
-        dataInicio: new Date(dataInicio),
-        dataFim: new Date(dataFim),
+        dataInicio: inicio,
+        dataFim: fim,
         observacao: observacao?.trim() || null,
       },
       include: {

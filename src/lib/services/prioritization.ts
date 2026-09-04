@@ -30,6 +30,50 @@ export async function rebalancePrioritization(): Promise<number> {
   return updates.length
 }
 
+export async function recalculateBacklogItemForSolicitacao(
+  solicitacaoId: string,
+  esforcoTotal: number
+): Promise<void> {
+  const { prisma } = await import('@/lib/prisma')
+  const { DEFAULT_GAIN_WEIGHTS, DEFAULT_VALOR_HORA } = await import('@/lib/config/gain-weights')
+
+  const backlogItem = await prisma.backlogItem.findUnique({
+    where: { solicitacaoId },
+    select: {
+      id: true,
+      tipoGanho: true,
+      valorGanho: true,
+    },
+  })
+
+  if (!backlogItem) return
+
+  const [gainWeightConfig, hourlyRateConfig] = await Promise.all([
+    prisma.gainWeightConfig.findUnique({ where: { tipoGanho: backlogItem.tipoGanho } }),
+    prisma.hourlyRateConfig.findFirst(),
+  ])
+
+  const weight =
+    gainWeightConfig?.peso ??
+    DEFAULT_GAIN_WEIGHTS[backlogItem.tipoGanho as keyof typeof DEFAULT_GAIN_WEIGHTS] ??
+    1.0
+  const valorHora = hourlyRateConfig?.valorHora ?? DEFAULT_VALOR_HORA
+  const ganhoNormalizado = normalizeGain(
+    backlogItem.tipoGanho,
+    backlogItem.valorGanho,
+    { [backlogItem.tipoGanho]: weight },
+    valorHora
+  )
+  const scorePriorizacao = calculatePrioritizationScore(ganhoNormalizado, esforcoTotal)
+
+  await prisma.backlogItem.update({
+    where: { id: backlogItem.id },
+    data: { ganhoNormalizado, scorePriorizacao },
+  })
+
+  await rebalancePrioritization()
+}
+
 export interface BacklogItemForRanking {
   id: string
   tipoGanho: string

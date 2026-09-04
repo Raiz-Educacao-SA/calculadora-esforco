@@ -29,7 +29,8 @@ describe('normalizeGain', () => {
   })
 
   it('applies REDUCAO_HORAS weight (0.8)', () => {
-    expect(normalizeGain('REDUCAO_HORAS', 100, DEFAULT_GAIN_WEIGHTS)).toBeCloseTo(80)
+    // 100 hours * default hourly rate (150) * REDUCAO_HORAS weight (0.8)
+    expect(normalizeGain('REDUCAO_HORAS', 100, DEFAULT_GAIN_WEIGHTS)).toBeCloseTo(12000)
   })
 
   it('uses default 1.0 for unknown type', () => {

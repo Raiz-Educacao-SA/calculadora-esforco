@@ -26,7 +26,7 @@ const viewerSections: NavSection[] = [
         label: 'Dashboard',
         href: '/',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
         ),
@@ -35,7 +35,7 @@ const viewerSections: NavSection[] = [
         label: 'Backlog',
         href: '/backlog',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         ),
@@ -47,13 +47,59 @@ const viewerSections: NavSection[] = [
 // Sections visible to ADMIN and OPERATOR (not VIEWER)
 const operatorSections: NavSection[] = [
   {
+    title: 'Geral',
+    items: [
+      {
+        label: 'Manual do Usuário',
+        href: '/manual',
+        icon: (
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    title: 'Fornecedores',
+    items: [
+      {
+        label: 'Fornecedores',
+        href: '/fornecedores',
+        icon: (
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        ),
+      },
+      {
+        label: 'Contratos',
+        href: '/contratos',
+        icon: (
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        ),
+      },
+      {
+        label: 'Pagamentos',
+        href: '/pagamentos',
+        icon: (
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
     title: 'Time',
     items: [
       {
         label: 'Alocação de Time',
         href: '/alocacao',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         ),
@@ -62,7 +108,7 @@ const operatorSections: NavSection[] = [
         label: 'Férias',
         href: '/ferias',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
         ),
@@ -80,7 +126,7 @@ const adminOnlySections: NavSection[] = [
         label: 'Áreas Técnicas',
         href: '/areas',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
         ),
@@ -89,7 +135,7 @@ const adminOnlySections: NavSection[] = [
         label: 'Áreas de Negócio',
         href: '/areas-negocio',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         ),
@@ -98,7 +144,7 @@ const adminOnlySections: NavSection[] = [
         label: 'Componentes',
         href: '/componentes',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
         ),
@@ -107,7 +153,7 @@ const adminOnlySections: NavSection[] = [
         label: 'Parametrização',
         href: '/parametrizacao',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
           </svg>
         ),
@@ -121,7 +167,7 @@ const adminOnlySections: NavSection[] = [
         label: 'Nova Solicitação',
         href: '/solicitacoes/nova',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         ),
@@ -135,7 +181,7 @@ const adminSectionItems: NavItem[] = [
     label: 'Colaboradores',
     href: '/alocacao/funcionarios',
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
@@ -144,7 +190,7 @@ const adminSectionItems: NavItem[] = [
     label: 'Usuários',
     href: '/admin/usuarios',
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
       </svg>
     ),
@@ -153,7 +199,7 @@ const adminSectionItems: NavItem[] = [
     label: 'Auditoria',
     href: '/auditoria',
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
       </svg>
     ),
@@ -170,8 +216,14 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebar-collapsed')
+    if (stored === 'true') setCollapsed(true)
+  }, [])
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -181,6 +233,14 @@ export function Sidebar() {
       })
       .catch(() => {})
   }, [])
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem('sidebar-collapsed', String(next))
+      return next
+    })
+  }
 
   const isAdmin = currentUser?.role === 'ADMIN'
   const isOperator = currentUser?.role === 'OPERATOR'
@@ -207,7 +267,10 @@ export function Sidebar() {
           <Link
             href={item.href}
             onClick={() => setMobileOpen(false)}
+            title={collapsed ? item.label : undefined}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-0.5 ${
+              collapsed ? 'justify-center' : ''
+            } ${
               active
                 ? 'bg-teal-600 text-white'
                 : 'text-gray-300 hover:bg-gray-700 hover:text-white'
@@ -215,126 +278,23 @@ export function Sidebar() {
             aria-current={active ? 'page' : undefined}
           >
             {item.icon}
-            {item.label}
+            {!collapsed && item.label}
           </Link>
         </li>
       )
     })
 
-  const navContent = (
-    <>
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-700 min-h-[64px]">
-        <div className="w-10 shrink-0 lg:hidden" aria-hidden="true" />
-        <Image src="/logo.jpg" alt="Raiz Educação" width={40} height={40} className="rounded-lg shrink-0 hidden lg:block" />
-        <div className="flex flex-col">
-          <span className="font-bold text-sm leading-tight">
-            <span className="text-orange-400">RAIZ</span>{' '}
-            <span className="text-teal-400">educação</span>
-          </span>
-          <span className="text-gray-400 text-xs mt-0.5">Transformação Backlog</span>
-        </div>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto py-4 px-2" aria-label="Navegação principal">
-        {viewerSections.map((section) => (
-          <div key={section.title} className="mb-6">
-            <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              {section.title}
-            </p>
-            <ul>
-              {renderNavItems(section.items)}
-            </ul>
-          </div>
-        ))}
-
-        {(isAdmin || isOperator) && operatorSections.map((section) => (
-          <div key={section.title} className="mb-6">
-            <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              {section.title}
-            </p>
-            <ul>
-              {renderNavItems(section.items)}
-            </ul>
-          </div>
-        ))}
-
-        {(isAdmin || isOperator) && adminOnlySections.map((section) => (
-          <div key={section.title} className="mb-6">
-            <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              {section.title}
-            </p>
-            <ul>
-              {renderNavItems(section.items)}
-            </ul>
-          </div>
-        ))}
-
-        {isAdmin && (
-          <div className="mb-6">
-            <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Administração
-            </p>
-            <ul>
-              {renderNavItems(adminSectionItems)}
-            </ul>
-          </div>
+  const renderSections = (sections: NavSection[]) =>
+    sections.map((section) => (
+      <div key={section.title} className="mb-6">
+        {!collapsed && (
+          <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            {section.title}
+          </p>
         )}
-      </nav>
-
-      {/* User info */}
-      {currentUser && (
-        <div className="border-t border-gray-700 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-200 truncate">{currentUser.nome ?? currentUser.email}</p>
-              {currentUser.role && (
-                <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium mt-0.5 ${
-                  currentUser.role === 'ADMIN'
-                    ? 'bg-teal-900/60 text-teal-300'
-                    : currentUser.role === 'OPERATOR'
-                    ? 'bg-blue-900/60 text-blue-300'
-                    : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {currentUser.role}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Theme Toggle */}
-      <div className="border-t border-gray-700 px-4 py-3">
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-          aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-        >
-          {theme === 'dark' ? (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
-          )}
-          {theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
-        </button>
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-gray-700 transition-colors mt-1"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          Sair
-        </button>
+        <ul>{renderNavItems(section.items)}</ul>
       </div>
-    </>
-  )
+    ))
 
   return (
     <>
@@ -373,11 +333,108 @@ export function Sidebar() {
         className={`
           fixed lg:static inset-y-0 left-0 z-40
           w-52 flex flex-col bg-gray-900 h-screen
-          transition-transform duration-200 ease-in-out
+          transition-all duration-200 ease-in-out
+          ${collapsed ? 'lg:w-14' : 'lg:w-52'}
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        {navContent}
+        {/* Header */}
+        <div className="flex items-center gap-2 px-3 py-4 border-b border-gray-700 min-h-[64px]">
+          <div className="w-10 shrink-0 lg:hidden" aria-hidden="true" />
+          <Image src="/logo.jpg" alt="Raiz Educação" width={40} height={40} className="rounded-lg shrink-0 hidden lg:block" />
+          {!collapsed && (
+            <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+              <span className="font-bold text-sm leading-tight">
+                <span className="text-orange-400">RAIZ</span>{' '}
+                <span className="text-teal-400">educação</span>
+              </span>
+              <span className="text-gray-400 text-xs mt-0.5 truncate">Transformação Backlog</span>
+            </div>
+          )}
+          <button
+            onClick={toggleCollapsed}
+            className="hidden lg:flex items-center justify-center w-7 h-7 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors shrink-0 ml-auto"
+            aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            <svg
+              className={`w-4 h-4 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-4 px-2" aria-label="Navegação principal">
+          {renderSections(viewerSections)}
+          {(isAdmin || isOperator) && renderSections(operatorSections)}
+          {(isAdmin || isOperator) && renderSections(adminOnlySections)}
+          {isAdmin && (
+            <div className="mb-6">
+              {!collapsed && (
+                <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Administração
+                </p>
+              )}
+              <ul>{renderNavItems(adminSectionItems)}</ul>
+            </div>
+          )}
+        </nav>
+
+        {/* User info */}
+        {currentUser && !collapsed && (
+          <div className="border-t border-gray-700 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-200 truncate">{currentUser.nome ?? currentUser.email}</p>
+                {currentUser.role && (
+                  <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium mt-0.5 ${
+                    currentUser.role === 'ADMIN'
+                      ? 'bg-teal-900/60 text-teal-300'
+                      : currentUser.role === 'OPERATOR'
+                      ? 'bg-blue-900/60 text-blue-300'
+                      : 'bg-gray-700 text-gray-400'
+                  }`}>
+                    {currentUser.role}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Theme Toggle + Logout */}
+        <div className="border-t border-gray-700 px-2 py-3">
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors ${collapsed ? 'justify-center' : ''}`}
+            aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+          >
+            {theme === 'dark' ? (
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+            {!collapsed && (theme === 'dark' ? 'Tema Claro' : 'Tema Escuro')}
+          </button>
+
+          <button
+            onClick={handleLogout}
+            title={collapsed ? 'Sair' : undefined}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-gray-700 transition-colors mt-1 ${collapsed ? 'justify-center' : ''}`}
+          >
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {!collapsed && 'Sair'}
+          </button>
+        </div>
       </aside>
     </>
   )

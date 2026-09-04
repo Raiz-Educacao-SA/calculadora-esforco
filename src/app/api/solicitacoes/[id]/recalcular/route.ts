@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/services/audit'
+import { recalculateBacklogItemForSolicitacao } from '@/lib/services/prioritization'
 
 export async function POST(
   _request: NextRequest,
@@ -50,6 +51,15 @@ export async function POST(
             },
           })
         }
+        if (!esforco) {
+          esforco = await prisma.esforco.findFirst({
+            where: {
+              criterioId: sc.criterioId,
+              complexidadeId: sc.complexidadeId,
+              ativo: true,
+            },
+          })
+        }
 
         if (esforco) {
           return prisma.solicitacaoCriterio.update({
@@ -69,6 +79,8 @@ export async function POST(
       where: { id },
       data: { esforcoTotal: newTotal },
     })
+
+    await recalculateBacklogItemForSolicitacao(id, newTotal)
 
     await logAudit({
       entidade: 'Solicitacao',

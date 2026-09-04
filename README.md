@@ -16,15 +16,16 @@ O sistema permite que times:
 |--------|-----------|
 | Frontend | Next.js 16 (App Router) + React 19 + TypeScript |
 | Backend | Next.js API Routes |
-| Banco de dados | SQLite (dev) via Prisma ORM |
+| Banco de dados | PostgreSQL/Supabase via Prisma ORM |
 | Estilização | Tailwind CSS v4 |
+| Autenticação | Sessão por cookie, email/senha e Google OAuth |
 | IA | Camada desacoplada (Mock / OpenAI / Anthropic) |
 | Testes | Jest + ts-jest |
 | Validação | Zod |
 
 **Por que esta stack?**
 - Next.js unifica frontend e backend em um único projeto
-- Prisma permite trocar SQLite por PostgreSQL sem alterar código
+- Prisma centraliza o modelo relacional e migrations para PostgreSQL/Supabase
 - Camada de IA desacoplada permite trocar provider sem impacto
 - Funções puras para cálculos garantem testabilidade
 
@@ -45,13 +46,30 @@ src/
 │   │   │       ├── recalcular/   # POST - recálculo
 │   │   │       └── aprovar/      # POST - aprovação
 │   │   ├── backlog/              # Backlog priorizado
+│   │   ├── alocacoes/            # Calendário de alocação de time
+│   │   ├── ferias/               # Gestão de férias
+│   │   ├── fornecedores/         # Cadastro de fornecedores
+│   │   ├── contratos/            # Contratos e documentos
+│   │   ├── pagamentos/           # Pagamentos de fornecedores
+│   │   ├── auth/                 # Login, logout, sessão e Google OAuth
+│   │   ├── admin/                # Usuários e configuração administrativa
 │   │   └── audit-logs/           # Logs de auditoria
 │   ├── areas/                    # Página gestão de áreas
+│   ├── areas-negocio/            # Página gestão de áreas de negócio
+│   ├── componentes/              # Página gestão de componentes
 │   ├── criterios/                # Página gestão de critérios
 │   ├── complexidades/            # Página gestão de complexidades
 │   ├── esforcos/                 # Página gestão de esforços
 │   ├── solicitacoes/nova/        # Página calculadora inteligente
 │   ├── backlog/                  # Página backlog + detalhe
+│   ├── alocacao/                 # Alocação de time e colaboradores
+│   ├── ferias/                   # Lista e timeline de férias
+│   ├── fornecedores/             # Gestão de fornecedores
+│   ├── contratos/                # Gestão de contratos
+│   ├── pagamentos/               # Gestão de pagamentos
+│   ├── admin/                    # Gestão de usuários
+│   ├── auditoria/                # Logs de auditoria
+│   ├── login/                    # Autenticação
 │   └── page.tsx                  # Dashboard
 ├── components/
 │   ├── Sidebar.tsx               # Navegação lateral
@@ -98,13 +116,23 @@ prisma/
 ```
 Area 1──N Criterio 1──N Complexidade
                    │
-                   └──N Esforco (UNIQUE: criterio+complexidade)
+                   └──N Esforco (UNIQUE: criterio+complexidade+componente)
 
 Solicitacao N──M Criterio (via SolicitacaoCriterio)
            │
            └──1 BacklogItem (após aprovação + ganho)
 
+User 1──N Session
+User 1──0..1 Funcionario
+Funcionario 1──N Alocacao
+Funcionario 1──N Ferias
+Fornecedor 1──N Contrato
+Fornecedor 1──N Pagamento
+Contrato 1──N ContratoDocumento
+
 GainWeightConfig  (pesos de normalização por tipo de ganho)
+HourlyRateConfig  (valor hora para ganho por redução de horas)
+AlocacaoConfig    (percentual e horas padrão de alocação)
 AuditLog          (histórico de alterações)
 ```
 
@@ -116,6 +144,9 @@ AuditLog          (histórico de alterações)
 - **Solicitacao**: demanda de desenvolvimento
 - **SolicitacaoCriterio**: critérios associados com fonte (IA/Manual)
 - **BacklogItem**: demanda aprovada com ganho e score
+- **User/Session**: autenticação e autorização por roles
+- **Funcionario, Alocacao, Ferias**: capacidade, calendário e indisponibilidades do time
+- **Fornecedor, Contrato, ContratoDocumento, Pagamento**: gestão administrativa de fornecedores
 
 ## Variáveis de Ambiente
 
@@ -147,7 +178,7 @@ ANTHROPIC_API_KEY=""
 # 1. Instalar dependências
 npm install
 
-# 2. Aplicar migrations (cria o banco SQLite)
+# 2. Aplicar migrations no PostgreSQL configurado no .env
 npx prisma migrate dev
 
 # 3. Popular com dados de exemplo
@@ -205,6 +236,12 @@ score = ganho_normalizado / esforco_total
 ### Fluxo E: Gestão do Backlog
 Visualizar ranking → Filtrar por área/status/tipo de ganho → Acompanhar posição e score → Atualizar status
 
+### Fluxo F: Alocação e Férias
+Gerenciar colaboradores → Registrar alocações por backlog/tarefa → Registrar férias → Visualizar timeline semanal. Datas de férias são tratadas como datas civis (`YYYY-MM-DD`) para evitar deslocamento de semana por fuso horário.
+
+### Fluxo G: Fornecedores
+Cadastrar fornecedor → Registrar contratos e documentos → Controlar pagamentos por vencimento/status.
+
 ## API Endpoints
 
 ### Parametrização
@@ -233,8 +270,33 @@ Visualizar ranking → Filtrar por área/status/tipo de ganho → Acompanhar pos
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | GET/POST | `/api/backlog` | Listar ranking / criar item |
+| DELETE | `/api/backlog` | Remoção em lote |
 | GET/PUT | `/api/backlog/[id]` | Detalhe / atualizar status |
 | GET | `/api/audit-logs` | Logs de auditoria |
+
+### Time e Administração
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET/POST | `/api/funcionarios` | Listar/criar colaboradores |
+| GET/PUT/DELETE | `/api/funcionarios/[id]` | Colaborador por ID |
+| GET/POST | `/api/alocacoes` | Listar/criar alocações |
+| GET/PUT/DELETE | `/api/alocacoes/[id]` | Alocação por ID |
+| GET/POST | `/api/ferias` | Listar/criar períodos de férias |
+| PUT/DELETE | `/api/ferias/[id]` | Atualizar/remover férias |
+| GET/POST | `/api/admin/usuarios` | Listar/criar usuários |
+| PUT/DELETE | `/api/admin/usuarios/[id]` | Atualizar/remover usuários |
+
+### Fornecedores
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET/POST | `/api/fornecedores` | Listar/criar fornecedores |
+| GET/PUT/DELETE | `/api/fornecedores/[id]` | Fornecedor por ID |
+| GET/POST | `/api/contratos` | Listar/criar contratos |
+| GET/PUT/DELETE | `/api/contratos/[id]` | Contrato por ID |
+| GET/POST | `/api/contratos/[id]/documentos` | Listar/criar documentos de contrato |
+| DELETE | `/api/contratos/[id]/documentos/[docId]` | Remover documento de contrato |
+| GET/POST | `/api/pagamentos` | Listar/criar pagamentos |
+| GET/PUT/DELETE | `/api/pagamentos/[id]` | Pagamento por ID |
 
 ## Regras de UX
 
@@ -255,29 +317,29 @@ O seed cria dados realistas para demonstração:
 
 ## Premissas e Decisões
 
-1. **SQLite para dev**: simplicidade, sem necessidade de servidor. Trocar para PostgreSQL alterando apenas `DATABASE_URL`.
+1. **PostgreSQL/Supabase**: banco relacional principal, com `DATABASE_URL` para aplicação e `DIRECT_URL` para migrations.
 2. **Mock provider como padrão**: permite demonstração sem API key de IA.
 3. **Recálculo explícito**: operador controla quando recalcular, evitando surpresas.
 4. **Pesos globais de ganho**: aplicados a todos os itens igualmente. Extensível para pesos por área.
-5. **Sem autenticação na v1**: campo `usuario` preparado na auditoria para integração futura.
-6. **Nomenclatura mista**: código em inglês, UI e dados em português.
+5. **Autenticação própria**: sessões persistidas no banco e cookie `session_id`; login por senha e Google OAuth.
+6. **Roles simples**: `ADMIN`, `OPERATOR` e `VIEWER`, com restrições aplicadas nas rotas sensíveis.
+7. **Datas civis em férias**: início/fim de férias são tratados como `YYYY-MM-DD` para evitar deslocamentos por fuso horário na timeline.
+8. **Nomenclatura mista**: código em inglês, UI e dados em português.
 
 ## Limitações Atuais
 
 - Mock provider usa word matching simples (sem LLM real)
-- SQLite não é ideal para produção multi-usuário
-- Sem autenticação/autorização
 - Sem paginação nas listagens (adequado para volumes moderados)
 - Pesos de normalização são globais
+- Algumas rotas de leitura dependem do proxy/cookie para proteção geral, enquanto rotas de escrita aplicam role explicitamente
 
 ## Próximos Passos Recomendados
 
 1. Integrar provider de IA real (OpenAI/Anthropic)
-2. Adicionar autenticação (NextAuth.js)
-3. Migrar para PostgreSQL em produção
-4. Dashboard com gráficos (Chart.js/Recharts)
-5. Exportação de dados (CSV, PDF)
-6. Notificações de mudança de status
-7. Pesos de normalização configuráveis por área
-8. Paginação e busca avançada
-9. Docker Compose para deploy
+2. Dashboard com gráficos (Chart.js/Recharts)
+3. Exportação de dados (CSV, PDF)
+4. Notificações de mudança de status
+5. Pesos de normalização configuráveis por área
+6. Paginação e busca avançada
+7. Revisão de autorização explícita em todas as rotas
+8. Docker Compose para ambiente local padronizado

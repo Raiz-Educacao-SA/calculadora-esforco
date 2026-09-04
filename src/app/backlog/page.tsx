@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -19,7 +19,7 @@ interface Funcionario {
 
 interface BacklogItem {
   id: string
-  posicao: number
+  posicao: number | null
   tipoGanho: string
   valorGanho: number
   ganhoNormalizado: number
@@ -179,6 +179,14 @@ export default function BacklogPage() {
     if (filterAreaSolicitante && !item.solicitacao?.areaSolicitante?.toLowerCase().includes(filterAreaSolicitante.toLowerCase())) return false
     return true
   })
+
+  const activeItems = filteredItems.filter(
+    (item) => item.status !== 'CONCLUIDO' && item.status !== 'CANCELADO'
+  )
+  const concludedItems = filteredItems.filter(
+    (item) => item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
+  )
+  const activePositionMap = new Map(activeItems.map((item, index) => [item.id, index + 1]))
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -414,16 +422,25 @@ export default function BacklogPage() {
           <>
             {/* Mobile card list */}
             <ul className="divide-y divide-gray-100 dark:divide-gray-700 md:hidden">
-              {filteredItems.map((item) => {
+              {[...activeItems, ...concludedItems].map((item, index) => {
                 const isEditing = editingId === item.id
+                const isConcluded = item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
                 return (
-                  <li key={item.id} className="p-4 space-y-3">
+                  <Fragment key={item.id}>
+                    {index === activeItems.length && concludedItems.length > 0 && activeItems.length > 0 && (
+                      <li className="py-2 px-4 bg-gray-50 dark:bg-gray-700/50">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Concluídas / Canceladas</span>
+                      </li>
+                    )}
+                    <li className={`p-4 space-y-3${isConcluded ? ' opacity-60' : ''}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         {!isViewer && (
                           <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0" />
                         )}
-                        <span className="text-base shrink-0">{positionLabel(item.posicao)}</span>
+                        <span className="text-base shrink-0">
+                          {isConcluded ? '—' : positionLabel(activePositionMap.get(item.id) ?? item.posicao ?? 0)}
+                        </span>
                         <button
                           onClick={() => router.push(`/backlog/${item.id}`)}
                           className="text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-left truncate"
@@ -478,7 +495,8 @@ export default function BacklogPage() {
                         <button onClick={() => router.push(`/backlog/${item.id}`)} className="flex-1 rounded py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">Detalhes</button>
                       </div>
                     )}
-                  </li>
+                    </li>
+                  </Fragment>
                 )
               })}
             </ul>
@@ -509,15 +527,24 @@ export default function BacklogPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                  {filteredItems.map((item) => {
+                  {[...activeItems, ...concludedItems].map((item, index) => {
                     const isEditing = editingId === item.id
+                    const isConcluded = item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
                     return (
-                      <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <Fragment key={item.id}>
+                        {index === activeItems.length && concludedItems.length > 0 && activeItems.length > 0 && (
+                          <tr>
+                            <td colSpan={16} className="px-2 py-2 bg-gray-50 dark:bg-gray-700/50">
+                              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Concluídas / Canceladas</span>
+                            </td>
+                          </tr>
+                        )}
+                        <tr className={`hover:bg-gray-50 dark:hover:bg-gray-700${isConcluded ? ' opacity-60' : ''}`}>
                         <td className="px-2 py-2 w-8">
                           <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} disabled={isViewer} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed" />
                         </td>
                         <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {positionLabel(item.posicao)}
+                          {isConcluded ? '—' : positionLabel(activePositionMap.get(item.id) ?? item.posicao ?? 0)}
                         </td>
                         <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                           {item.solicitacao?.zeevNumber ?? '—'}
@@ -653,7 +680,8 @@ export default function BacklogPage() {
                             </div>
                           )}
                         </td>
-                      </tr>
+                        </tr>
+                      </Fragment>
                     )
                   })}
                 </tbody>

@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 
 interface BacklogItem {
   id: string
-  posicao: number
+  posicao: number | null
   scorePriorizacao: number
   status: string
   solicitacao: {
@@ -26,6 +26,7 @@ interface KpiData {
   esforcoTotalBacklog: number
   demandasPriorizadas: number
   scoreMedio: number
+  horasExecutadas: number
 }
 
 export default function DashboardPage() {
@@ -35,8 +36,10 @@ export default function DashboardPage() {
     esforcoTotalBacklog: 0,
     demandasPriorizadas: 0,
     scoreMedio: 0,
+    horasExecutadas: 0,
   })
   const [top5, setTop5] = useState<BacklogItem[]>([])
+  const [inactiveItems, setInactiveItems] = useState<BacklogItem[]>([])
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -59,8 +62,19 @@ export default function DashboardPage() {
             ? items.reduce((sum, item) => sum + (item.scorePriorizacao ?? 0), 0) / totalDemandas
             : 0
 
-        setKpi({ totalDemandas, esforcoTotalBacklog, demandasPriorizadas: totalDemandas, scoreMedio })
-        setTop5(items.slice(0, 5))
+        const horasExecutadas = items
+          .filter((item) => item.status === 'CONCLUIDO')
+          .reduce((sum, item) => sum + (item.solicitacao?.esforcoTotal ?? 0), 0)
+
+        setKpi({ totalDemandas, esforcoTotalBacklog, demandasPriorizadas: totalDemandas, scoreMedio, horasExecutadas })
+
+        const activeItems = items.filter(
+          (item) => item.status !== 'CONCLUIDO' && item.status !== 'CANCELADO'
+        )
+        setTop5(activeItems.slice(0, 5))
+        setInactiveItems(items.filter(
+          (item) => item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
+        ))
       } catch {
         setError('Erro ao carregar dados do dashboard.')
       } finally {
@@ -116,6 +130,13 @@ export default function DashboardPage() {
       borderColor: 'border-gray-400',
       valueColor: 'text-gray-900 dark:text-white',
     },
+    {
+      label: 'Horas Executadas',
+      value: `${kpi.horasExecutadas.toLocaleString('pt-BR')}h`,
+      description: 'horas de projetos concluídos',
+      borderColor: 'border-green-500',
+      valueColor: 'text-green-600 dark:text-green-400',
+    },
   ]
 
   const positionLabel = (pos: number) => {
@@ -133,7 +154,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {kpiCards.map((card) => (
           <div key={card.label} className={`bg-white dark:bg-gray-800 shadow rounded-lg p-6 border-l-4 ${card.borderColor}`}>
             <p className={`text-3xl font-bold ${card.valueColor}`}>{card.value}</p>
@@ -195,7 +216,7 @@ export default function DashboardPage() {
                 <li key={item.id} className="py-3 space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-base shrink-0">{positionLabel(item.posicao)}</span>
+                      <span className="text-base shrink-0">{positionLabel(item.posicao ?? 0)}</span>
                       <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.solicitacao?.titulo ?? '—'}</span>
                     </div>
                     <StatusBadge status={item.status as Parameters<typeof StatusBadge>[0]['status']} />
@@ -226,7 +247,7 @@ export default function DashboardPage() {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
                   {top5.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{positionLabel(item.posicao)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{positionLabel(item.posicao ?? 0)}</td>
                       <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{item.solicitacao?.zeevNumber ?? '—'}</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white max-w-xs truncate">{item.solicitacao?.titulo ?? '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{item.solicitacao?.solicitante ?? '—'}</td>
@@ -242,6 +263,53 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {inactiveItems.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Concluídas / Canceladas</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Demandas fora do ranking ativo.</p>
+
+          <ul className="mt-4 divide-y divide-gray-100 dark:divide-gray-700 md:hidden">
+            {inactiveItems.map((item) => (
+              <li key={item.id} className="py-3 space-y-1.5 opacity-60">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.solicitacao?.titulo ?? '—'}</span>
+                  <StatusBadge status={item.status as Parameters<typeof StatusBadge>[0]['status']} />
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                  <span>{item.solicitacao?.area?.nome ?? '—'}</span>
+                  <span className="font-bold text-gray-900 dark:text-white">Score: {item.scorePriorizacao?.toFixed(2) ?? '—'}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-4 hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700/50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Nº Zeev</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Título</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Área Técnica</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Score</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                {inactiveItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 opacity-60">
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{item.solicitacao?.zeevNumber ?? '—'}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white max-w-xs truncate">{item.solicitacao?.titulo ?? '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{item.solicitacao?.area?.nome ?? '—'}</td>
+                    <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">{item.scorePriorizacao?.toFixed(2) ?? '—'}</td>
+                    <td className="px-4 py-3"><StatusBadge status={item.status as Parameters<typeof StatusBadge>[0]['status']} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

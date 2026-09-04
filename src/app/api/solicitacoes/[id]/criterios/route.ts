@@ -62,11 +62,18 @@ export async function POST(
       })
     }
     if (!esforco) {
+      esforco = await prisma.esforco.findFirst({
+        where: { criterioId, complexidadeId, ativo: true },
+      })
+    }
+    if (!esforco) {
       return NextResponse.json(
         { error: 'Esforço não parametrizado para esta combinação critério + complexidade' },
         { status: 400 }
       )
     }
+
+    const resolvedComponenteId = componenteId || esforco.componenteId || null
 
     const includeRelations = {
       criterio: { select: { id: true, nome: true } },
@@ -76,7 +83,7 @@ export async function POST(
 
     // Check if already exists
     const existing = await prisma.solicitacaoCriterio.findFirst({
-      where: { solicitacaoId: id, criterioId, componenteId: componenteId || null },
+      where: { solicitacaoId: id, criterioId, componenteId: resolvedComponenteId },
     })
     if (existing) {
       // Update instead of creating duplicate
@@ -84,7 +91,7 @@ export async function POST(
         where: { id: existing.id },
         data: {
           complexidadeId,
-          componenteId: componenteId || null,
+          componenteId: resolvedComponenteId,
           valorEsforco: esforco.valorEsforco,
           fonte: 'MANUAL',
           justificativa: 'Alteração manual pelo operador',
@@ -100,7 +107,7 @@ export async function POST(
         solicitacaoId: id,
         criterioId,
         complexidadeId,
-        componenteId: componenteId || null,
+        componenteId: resolvedComponenteId,
         valorEsforco: esforco.valorEsforco,
         fonte: 'MANUAL',
         justificativa: 'Adicionado manualmente pelo operador',
