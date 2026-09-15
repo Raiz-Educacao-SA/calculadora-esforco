@@ -477,9 +477,17 @@ return (
 4. Executar `vercel --prod --yes`. O build definido em `package.json` gera o
    Prisma Client, aplica migrations com as variáveis de produção e compila o Next.js.
 5. Confirmar status Ready e o alias `transformacao-raiz-backlog.vercel.app` com
-   `vercel inspect <url-do-deployment>`. Com o projeto correto vinculado, a promoção
-   atribui o alias automaticamente. Corrigir manualmente somente se a inspeção
-   indicar que o endereço esperado não foi atribuído.
+   `vercel inspect https://transformacao-raiz-backlog.vercel.app`. Neste ambiente,
+   o CLI promove automaticamente os aliases alternativos, incluindo
+   `1-11-calculadora-de-esforco.vercel.app`; em 15/09/2026 foi necessário atualizar
+   explicitamente o endereço principal:
+
+   ```powershell
+   vercel alias set <url-do-deployment> transformacao-raiz-backlog.vercel.app
+   vercel inspect https://transformacao-raiz-backlog.vercel.app
+   ```
+
+   A inspeção pelo endereço principal deve resolver para o ID do novo deployment.
 6. Conferir os logs de migration, a resposta HTTP de produção e registrar o
    resultado em [RETOMADA.md](RETOMADA.md).
 
@@ -617,7 +625,7 @@ ANTHROPIC_API_KEY=...               # se AI_PROVIDER=anthropic
 
 ## Contato & Suporte
 
-- **Repositório**: https://github.com/rodrigovieiraraiz/calculadora-esforco
+- **Repositório**: https://github.com/Raiz-Educacao-SA/calculadora-esforco
 - **Projeto Vercel**: https://vercel.com/dashboard (projeto `transformacao-raiz-backlog`)
 - **Supabase**: [Dashboard Supabase — atualizar conforme necessário]
 
