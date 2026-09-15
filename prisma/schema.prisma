@@ -149,6 +149,9 @@ model BacklogItem {
   updatedAt         DateTime                 @updatedAt
   dataInicio        DateTime?
   previsaoConclusao DateTime?
+  dataConclusao     DateTime?
+  responsavelId     String?
+  responsavel       Funcionario?             @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
   solicitacao       Solicitacao              @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade)
   alocacoes         Alocacao[]
   repriorizacoes    BacklogReprioritizacao[]
@@ -244,6 +247,7 @@ model Funcionario {
   id        String     @id @default(cuid())
   nome      String
   cargo     String?
+  estagiario Boolean   @default(false)
   ativo     Boolean    @default(true)
   areaId    String?
   userId    String?    @unique
@@ -253,6 +257,7 @@ model Funcionario {
   user      User?      @relation(fields: [userId], references: [id])
   alocacoes Alocacao[]
   ferias    Ferias[]
+  atividades BacklogItem[]
 
   @@map("funcionarios")
 }

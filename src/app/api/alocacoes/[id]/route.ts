@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOperator, AuthError } from '@/lib/auth'
+import { SchedulingError } from '@/lib/services/capacity'
+import { reprojectBacklog, schedulingTransaction } from '@/lib/services/scheduling'
+import { saveAllocation } from '@/lib/services/allocation'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -8,10 +11,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const alocacao = await prisma.alocacao.findUnique({
       where: { id },
       include: {
-        funcionario: { select: { id: true, nome: true, cargo: true } },
+        funcionario: { select: { id: true, nome: true, cargo: true, estagiario: true } },
         backlogItem: {
           select: {
-            id: true,
+            id: true, status: true, dataInicio: true, previsaoConclusao: true, dataConclusao: true,
             solicitacao: {
               select: {
                 titulo: true,
@@ -38,41 +41,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await requireOperator()
     const { id } = await params
     const body = await request.json()
-    const { funcionarioId, backlogItemId, titulo, dataInicio, dataFim, areaSolicitante, cor, horasDiarias } = body
-
-    const data: Record<string, unknown> = {}
-    if (funcionarioId !== undefined) data.funcionarioId = funcionarioId
-    if (backlogItemId !== undefined) data.backlogItemId = backlogItemId || null
-    if (titulo !== undefined) data.titulo = titulo.trim()
-    if (dataInicio !== undefined) data.dataInicio = new Date(dataInicio)
-    if (dataFim !== undefined) data.dataFim = new Date(dataFim)
-    if (areaSolicitante !== undefined) data.areaSolicitante = areaSolicitante?.trim() || null
-    if (cor !== undefined) data.cor = cor?.trim() || null
-    if (horasDiarias !== undefined) data.horasDiarias = horasDiarias != null ? Number(horasDiarias) : null
-
-    const alocacao = await prisma.alocacao.update({
-      where: { id },
-      data,
-      include: {
-        funcionario: { select: { id: true, nome: true, cargo: true } },
-      },
-    })
-
-    if (alocacao.backlogItemId) {
-      const syncData: Record<string, Date> = {}
-      if (data.dataInicio !== undefined) syncData.dataInicio = data.dataInicio as Date
-      if (data.dataFim !== undefined) syncData.previsaoConclusao = data.dataFim as Date
-      if (Object.keys(syncData).length > 0) {
-        await prisma.backlogItem.update({
-          where: { id: alocacao.backlogItemId },
-          data: syncData,
-        })
-      }
-    }
+    const alocacao = await schedulingTransaction((tx) => saveAllocation(tx, body, id))
 
     return NextResponse.json(alocacao)
   } catch (error) {
-    if (error instanceof AuthError) {
+    if (error instanceof AuthError || error instanceof SchedulingError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[PUT /api/alocacoes/[id]]', error)
@@ -85,11 +58,20 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await requireOperator()
     const { id } = await params
 
-    await prisma.alocacao.delete({ where: { id } })
+    await schedulingTransaction(async (tx) => {
+      const existing = await tx.alocacao.findUnique({ where: { id }, include: { backlogItem: true } })
+      if (!existing) throw new SchedulingError('Alocação não encontrada', 404)
+      if (existing.backlogItem?.status === 'EM_ANDAMENTO') throw new SchedulingError('Altere o responsável ou status da atividade em andamento pelo backlog antes de excluir a alocação')
+      await tx.alocacao.delete({ where: { id } })
+      if (existing.backlogItemId && existing.backlogItem?.status !== 'CONCLUIDO') {
+        await tx.backlogItem.update({ where: { id: existing.backlogItemId }, data: { responsavelId: null, previsaoConclusao: null } })
+      }
+      await reprojectBacklog(tx, [existing.funcionarioId])
+    })
 
     return NextResponse.json({ message: 'Alocação excluída com sucesso' })
   } catch (error) {
-    if (error instanceof AuthError) {
+    if (error instanceof AuthError || error instanceof SchedulingError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[DELETE /api/alocacoes/[id]]', error)

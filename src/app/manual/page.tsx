@@ -126,7 +126,9 @@ export default function ManualPage() {
               <BulletItem>Lista todas as demandas ordenadas por score de priorização</BulletItem>
               <BulletItem>Demandas ativas aparecem no topo; concluídas/canceladas ao final com separador visual</BulletItem>
               <BulletItem><strong>Filtros:</strong> Solicitante, Área Solicitante, Área Técnica, Status, Tipo de Ganho</BulletItem>
-              <BulletItem><strong>Edição inline:</strong> status, responsável, data de início, previsão de conclusão</BulletItem>
+              <BulletItem><strong>Edição inline:</strong> status, responsável e data de início</BulletItem>
+              <BulletItem><strong>Previsão automática:</strong> ao salvar Em Andamento, informe o início e o responsável. O prazo usa o esforço e a capacidade disponível, considerando jornada, percentual para projetos, atividades paralelas e férias.</BulletItem>
+              <BulletItem><strong>Conclusão:</strong> preenchida com a data do dia ao salvar Concluído. Reabrir a atividade limpa essa data.</BulletItem>
               <BulletItem>Seleção em lote para remoção de itens</BulletItem>
               <BulletItem>Clique no título de uma demanda para abrir o detalhe completo</BulletItem>
             </ul>
@@ -147,7 +149,7 @@ export default function ManualPage() {
                 Operador adiciona/remove critérios e altera complexidades manualmente
               </StepItem>
               <StepItem number={4} label="Recalcular">
-                Clique em "Recalcular" para atualizar o esforço estimado após ajustes
+                Clique em &ldquo;Recalcular&rdquo; para atualizar o esforço estimado após ajustes
               </StepItem>
               <StepItem number={5} label="Aprovar">
                 Aprova o esforço calculado — somente após aprovação a demanda pode entrar no backlog
@@ -211,6 +213,8 @@ export default function ManualPage() {
             <ul className="space-y-1">
               <BulletItem>Visualização por colaborador com blocos coloridos por área/demanda</BulletItem>
               <BulletItem>Criar alocações vinculadas a itens do backlog ou de forma avulsa</BulletItem>
+              <BulletItem><strong>Estagiários:</strong> marque a opção no cadastro de colaboradores para aplicar jornada de 6h/dia. O percentual de projetos definido na Parametrização é aplicado sobre essa jornada.</BulletItem>
+              <BulletItem>Atividades em andamento compartilham a capacidade restante após as reservas. A previsão considera segunda a sexta e férias cadastradas; feriados não são descontados automaticamente.</BulletItem>
               <BulletItem>Cálculo automático de dias úteis e horas totais da alocação</BulletItem>
             </ul>
           </div>

@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { dateOnly, SchedulingError } from '@/lib/services/capacity'
+import { reprojectBacklog, schedulingTransaction } from '@/lib/services/scheduling'
 import { getSession, ROLES, AuthError } from '@/lib/auth'
-
-function parseDateOnlyToUTCNoon(value: string): Date {
-  const [year, month, day] = value.split('T')[0].split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0))
-}
 
 export async function GET() {
   try {
@@ -56,8 +53,8 @@ export async function POST(request: NextRequest) {
     if (!dataInicio || !dataFim) {
       return NextResponse.json({ error: 'Data início e data fim são obrigatórias' }, { status: 400 })
     }
-    const inicio = parseDateOnlyToUTCNoon(dataInicio)
-    const fim = parseDateOnlyToUTCNoon(dataFim)
+    const inicio = dateOnly(dataInicio)
+    const fim = dateOnly(dataFim)
 
     if (fim < inicio) {
       return NextResponse.json({ error: 'Data fim não pode ser anterior à data início' }, { status: 400 })
@@ -71,7 +68,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const ferias = await prisma.ferias.create({
+    const ferias = await schedulingTransaction(async (tx) => {
+    const result = await tx.ferias.create({
       data: {
         funcionarioId,
         dataInicio: inicio,
@@ -89,9 +87,12 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    await reprojectBacklog(tx, [funcionarioId])
+    return result
+    })
     return NextResponse.json(ferias, { status: 201 })
   } catch (error) {
-    if (error instanceof AuthError) {
+    if (error instanceof AuthError || error instanceof SchedulingError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[POST /api/ferias]', error)

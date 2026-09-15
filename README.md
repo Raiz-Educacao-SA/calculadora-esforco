@@ -2,6 +2,12 @@
 
 Ferramenta web para calcular esforço de demandas de desenvolvimento usando IA e parametrização, com priorização automática de backlog baseada na relação ganho/esforço.
 
+## Documentação
+
+- [Documentação técnica do sistema](docs/SISTEMA.md)
+- [Alterações de 15/09/2026: capacidade, previsão e conclusão](docs/ALTERACOES-2026-09-15.md)
+- [Registro de retomada e publicação](docs/RETOMADA.md)
+
 ## Visão Geral
 
 O sistema permite que times:
@@ -235,6 +241,18 @@ score = ganho_normalizado / esforco_total
 
 ### Fluxo E: Gestão do Backlog
 Visualizar ranking → Filtrar por área/status/tipo de ganho → Acompanhar posição e score → Atualizar status
+
+#### Capacidade, previsão e conclusão
+
+- No cadastro de colaboradores, marque **Estagiário** para aplicar a jornada de **6h/dia**. Os demais usam a jornada padrão de **Parametrização → Alocação em Projetos** (8h por padrão).
+- A capacidade diária para projetos é `jornada × percentual de alocação / 100`. Com 80%, um estagiário tem 4,8h/dia e um profissional de jornada de 8h tem 6,4h/dia.
+- É possível definir o responsável antes de iniciar. Ao salvar **Em Andamento**, informe **Data de início** e um responsável ativo; a solicitação deve ter esforço positivo. A **Previsão** é calculada pelo servidor e deixa de ser um campo de edição manual no backlog.
+- O cálculo distribui o esforço de segunda a sexta, incluindo o primeiro dia quando útil e excluindo férias cadastradas. Não há cadastro de feriados no sistema; eles não são descontados automaticamente.
+- Alocações avulsas e reservas de atividades ainda não iniciadas consomem as horas diárias informadas (sem valor, reservam toda a capacidade). As atividades em andamento dividem igualmente a capacidade restante. Um limite de horas na alocação vinculada funciona como teto; quando uma atividade termina, suas horas disponíveis são redistribuídas.
+- Alterações de início, responsável, esforço, jornada, percentual, alocações e férias recalculam as previsões afetadas e sincronizam as alocações. O cálculo usa esforço total e início informado; não há apontamento de horas realizadas.
+- A coluna **CONCLUSÃO** registra automaticamente a data da transição para **Concluído**, no calendário de São Paulo. Salvar novamente não troca a data; reabrir limpa a conclusão, e concluir novamente registra uma nova data. Atividades concluídas preservam sua ocupação histórica até a data de conclusão.
+
+**Atualização do banco:** a migration `20260915120000_capacity_forecast_completion` adiciona a identificação de estagiário, o responsável persistente e a data de conclusão. Ela preserva o responsável da primeira alocação existente. Colaboradores existentes começam com jornada padrão e devem ser identificados como estagiários no cadastro quando aplicável. Datas de conclusão antigas permanecem vazias, pois não podem ser inferidas com segurança. Aplique as migrations no banco do ambiente de destino antes de executar esta versão (`npx prisma migrate deploy`); para validar somente o código, use `npx prisma generate`, `npx tsc --noEmit`, `npm test -- --runInBand` e `npx next build`.
 
 ### Fluxo F: Alocação e Férias
 Gerenciar colaboradores → Registrar alocações por backlog/tarefa → Registrar férias → Visualizar timeline semanal. Datas de férias são tratadas como datas civis (`YYYY-MM-DD`) para evitar deslocamento de semana por fuso horário.

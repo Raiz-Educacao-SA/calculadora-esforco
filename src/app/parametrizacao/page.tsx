@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 
 interface Area { id: string; nome: string }
 interface Componente { id: string; nome: string; areaId: string }
@@ -129,8 +130,8 @@ export default function ParametrizacaoPage() {
   const handleSaveAlocacaoConfig = async () => {
     const perc = Number(percentualAlocacaoInput)
     const horas = Number(horasDiariasInput)
-    if (!perc || perc <= 0 || perc > 100) { showError('Percentual de alocação deve ser entre 1 e 100.'); return }
-    if (!horas || horas <= 0) { showError('Horas diárias deve ser maior que zero.'); return }
+    if (!Number.isFinite(perc) || perc <= 0 || perc > 100) { showError('Percentual de alocação deve ser maior que zero e até 100.'); return }
+    if (!Number.isFinite(horas) || horas <= 0 || horas > 24) { showError('Horas diárias deve ser maior que zero e até 24.'); return }
     setSavingAlocacaoConfig(true)
     try {
       const res = await fetch('/api/parametrizacao/alocacao-config', {
@@ -478,17 +479,24 @@ export default function ParametrizacaoPage() {
           </div>
           <div className="w-40">
             <label htmlFor="horas-diarias" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Horas Diárias (h)
+              Jornada padrão (h/dia)
             </label>
             <input
               id="horas-diarias"
               type="number"
               min="0.5"
+              max="24"
               step="0.5"
               value={horasDiariasInput}
               onChange={(e) => setHorasDiariasInput(e.target.value)}
               className={`${inputClass} w-full`}
             />
+          </div>
+          <div className="w-40">
+            <label htmlFor="jornada-estagiario" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              Estagiários (h/dia)
+            </label>
+            <input id="jornada-estagiario" type="number" value={6} readOnly className={`${inputClass} w-full bg-gray-50 dark:bg-gray-900`} />
           </div>
           <button
             type="button"
@@ -516,6 +524,21 @@ export default function ParametrizacaoPage() {
             </button>
           )}
         </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
+          <div className="rounded-md bg-teal-50 dark:bg-teal-900/20 p-3 text-teal-900 dark:text-teal-200">
+            <p className="font-medium">Profissional com jornada padrão</p>
+            <p>{horasDiarias}h × {percentualAlocacao}% = <strong>{(horasDiarias * percentualAlocacao / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}h/dia para projetos</strong></p>
+          </div>
+          <div className="rounded-md bg-teal-50 dark:bg-teal-900/20 p-3 text-teal-900 dark:text-teal-200">
+            <p className="font-medium">Estagiário</p>
+            <p>6h × {percentualAlocacao}% = <strong>{(6 * percentualAlocacao / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}h/dia para projetos</strong></p>
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+          Identifique os estagiários no <Link href="/alocacao/funcionarios" className="text-teal-600 dark:text-teal-400 underline">cadastro de colaboradores</Link>.
+          {' '}A capacidade é compartilhada entre as demandas em andamento, considerando outras alocações e férias.
+          {' '}Alterações nesta configuração recalculam as previsões das atividades em andamento.
+        </p>
       </div>}
 
       {/* Area selector */}

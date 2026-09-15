@@ -1,4 +1,5 @@
 import { HOUR_BASED_GAIN_TYPES } from '@/lib/config/gain-weights'
+import type { SchedulingTransaction } from './scheduling'
 
 const MAX_PRIORIZADO = 5
 const INACTIVE_BACKLOG_STATUSES = ['CONCLUIDO', 'CANCELADO']
@@ -47,15 +48,23 @@ export async function rebalancePrioritization(): Promise<number> {
 
 export async function recalculateBacklogItemForSolicitacao(
   solicitacaoId: string,
-  esforcoTotal: number
+  esforcoTotal: number,
+  transaction?: SchedulingTransaction
 ): Promise<void> {
-  const { prisma } = await import('@/lib/prisma')
+  const { reprojectBacklog, schedulingTransaction } = await import('./scheduling')
+  if (!transaction) {
+    await schedulingTransaction((tx) => recalculateBacklogItemForSolicitacao(solicitacaoId, esforcoTotal, tx))
+    await rebalancePrioritization()
+    return
+  }
+  const prisma = transaction
   const { DEFAULT_GAIN_WEIGHTS, DEFAULT_VALOR_HORA } = await import('@/lib/config/gain-weights')
 
   const backlogItem = await prisma.backlogItem.findUnique({
     where: { solicitacaoId },
     select: {
       id: true,
+      responsavelId: true,
       tipoGanho: true,
       valorGanho: true,
     },
@@ -86,7 +95,7 @@ export async function recalculateBacklogItemForSolicitacao(
     data: { ganhoNormalizado, scorePriorizacao },
   })
 
-  await rebalancePrioritization()
+  if (backlogItem.responsavelId) await reprojectBacklog(transaction, [backlogItem.responsavelId])
 }
 
 export interface BacklogItemForRanking {

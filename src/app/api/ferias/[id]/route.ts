@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { dateOnly, SchedulingError } from '@/lib/services/capacity'
+import { reprojectBacklog, schedulingTransaction } from '@/lib/services/scheduling'
 import { getSession, ROLES, AuthError } from '@/lib/auth'
-
-function parseDateOnlyToUTCNoon(value: string): Date {
-  const [year, month, day] = value.split('T')[0].split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0))
-}
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -37,8 +34,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json()
     const { dataInicio, dataFim, observacao } = body
 
-    const inicio = dataInicio ? parseDateOnlyToUTCNoon(dataInicio) : null
-    const fim = dataFim ? parseDateOnlyToUTCNoon(dataFim) : null
+    const inicio = dataInicio !== undefined ? dateOnly(dataInicio) : existing.dataInicio
+    const fim = dataFim !== undefined ? dateOnly(dataFim) : existing.dataFim
 
     if (inicio && fim && fim < inicio) {
       return NextResponse.json({ error: 'Data fim não pode ser anterior à data início' }, { status: 400 })
@@ -49,7 +46,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (dataFim !== undefined) data.dataFim = fim
     if (observacao !== undefined) data.observacao = observacao?.trim() || null
 
-    const ferias = await prisma.ferias.update({
+    const ferias = await schedulingTransaction(async (tx) => {
+    const result = await tx.ferias.update({
       where: { id },
       data,
       include: {
@@ -63,9 +61,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
+    await reprojectBacklog(tx, [existing.funcionarioId])
+    return result
+    })
     return NextResponse.json(ferias)
   } catch (error) {
-    if (error instanceof AuthError) {
+    if (error instanceof AuthError || error instanceof SchedulingError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[PUT /api/ferias/[id]]', error)
@@ -100,11 +101,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    await prisma.ferias.delete({ where: { id } })
+    await schedulingTransaction(async (tx) => {
+      await tx.ferias.delete({ where: { id } })
+      await reprojectBacklog(tx, [existing.funcionarioId])
+    })
 
     return NextResponse.json({ message: 'Férias excluídas com sucesso' })
   } catch (error) {
-    if (error instanceof AuthError) {
+    if (error instanceof AuthError || error instanceof SchedulingError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[DELETE /api/ferias/[id]]', error)

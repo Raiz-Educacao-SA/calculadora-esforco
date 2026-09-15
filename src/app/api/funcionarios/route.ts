@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin, requireOperator, AuthError } from '@/lib/auth'
+import { requireAdmin, AuthError } from '@/lib/auth'
 
 export async function GET() {
   try {
@@ -21,7 +21,9 @@ export async function POST(request: NextRequest) {
   try {
     await requireAdmin()
     const body = await request.json()
-    const { nome, cargo, areaId } = body
+    const { nome, cargo, areaId, estagiario = false } = body
+
+    if (typeof estagiario !== 'boolean') return NextResponse.json({ error: 'estagiario deve ser verdadeiro ou falso' }, { status: 400 })
 
     if (!nome?.trim()) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
@@ -30,6 +32,7 @@ export async function POST(request: NextRequest) {
     const funcionario = await prisma.funcionario.create({
       data: {
         nome: nome.trim(),
+        estagiario,
         cargo: cargo?.trim() || null,
         areaId: areaId || null,
       },

@@ -17,6 +17,7 @@ interface Funcionario {
   id: string
   nome: string
   cargo: string | null
+  estagiario: boolean
   ativo: boolean
   area: Area | null
   userId?: string | null
@@ -26,11 +27,12 @@ interface Funcionario {
 interface FormData {
   nome: string
   cargo: string
+  estagiario: boolean
   areaId: string
   userId: string
 }
 
-const emptyForm: FormData = { nome: '', cargo: '', areaId: '', userId: '' }
+const emptyForm: FormData = { nome: '', cargo: '', estagiario: false, areaId: '', userId: '' }
 
 export default function FuncionariosPage() {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([])
@@ -99,7 +101,7 @@ export default function FuncionariosPage() {
 
   const openEdit = (f: Funcionario) => {
     setEditItem(f)
-    setForm({ nome: f.nome, cargo: f.cargo ?? '', areaId: f.area?.id ?? '', userId: f.userId ?? '' })
+    setForm({ nome: f.nome, cargo: f.cargo ?? '', estagiario: f.estagiario ?? false, areaId: f.area?.id ?? '', userId: f.userId ?? '' })
     setFormError('')
     setShowForm(true)
   }
@@ -125,7 +127,7 @@ export default function FuncionariosPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: form.nome.trim(), cargo: form.cargo.trim() || null, areaId: form.areaId || null, userId: form.userId || null }),
+        body: JSON.stringify({ nome: form.nome.trim(), cargo: form.cargo.trim() || null, estagiario: form.estagiario, areaId: form.areaId || null, userId: form.userId || null }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -239,6 +241,7 @@ export default function FuncionariosPage() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{f.nome}</p>
                       {f.cargo && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{f.cargo}</p>}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{f.estagiario ? 'Estagiário · 6h/dia' : 'Jornada padrão'}</p>
                       {f.area && <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">{f.area.nome}</p>}
                     </div>
                     <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${f.ativo ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>
@@ -262,6 +265,7 @@ export default function FuncionariosPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Nome</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Cargo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Jornada</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Área Técnica</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
                   {isAdmin && <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Ações</th>}
@@ -272,6 +276,7 @@ export default function FuncionariosPage() {
                   <tr key={f.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{f.nome}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{f.cargo ?? '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{f.estagiario ? 'Estagiário · 6h/dia' : 'Padrão'}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{f.area?.nome ?? '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${f.ativo ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>
@@ -338,6 +343,13 @@ export default function FuncionariosPage() {
                     placeholder="Ex: Desenvolvedor, Analista..."
                     maxLength={100}
                   />
+                </div>
+                <div>
+                  <label htmlFor="estagiario" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <input id="estagiario" type="checkbox" checked={form.estagiario} onChange={(e) => setForm((f) => ({ ...f, estagiario: e.target.checked }))} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    Estagiário — jornada de 6 horas por dia
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">O percentual de alocação em projetos será aplicado sobre essa jornada. Para os demais colaboradores, vale a jornada definida na Parametrização.</p>
                 </div>
                 <div>
                   <label htmlFor="areaId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">

@@ -2,17 +2,23 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getAreaColor, getAreaColorHex, getAreaTextColor } from '@/lib/alocacao-colors'
+import { dailyProjectCapacity, HORAS_DIARIAS_ESTAGIARIO } from '@/lib/services/capacity'
 
 interface Funcionario {
   id: string
   nome: string
   cargo: string | null
+  estagiario: boolean
   ativo: boolean
   area: { id: string; nome: string } | null
 }
 
 interface BacklogItemRef {
   id: string
+  status: string
+  dataInicio: string | null
+  previsaoConclusao: string | null
+  dataConclusao: string | null
   solicitacao: {
     titulo: string
     areaSolicitante: string | null
@@ -131,29 +137,6 @@ function overlapsWeek(alocacao: Alocacao, weekStart: Date): boolean {
 
 const WEEKS_WINDOW = 8
 
-function calcularHorasDisponiveis(
-  funcionarioId: string,
-  dataInicio: string,
-  dataFim: string,
-  alocacoes: Alocacao[],
-  alocacaoConfig: { horasDiarias: number; percentualAlocacao: number },
-  excludeId?: string
-): number {
-  const horasEfetivas = alocacaoConfig.horasDiarias * (alocacaoConfig.percentualAlocacao / 100)
-  const inicio = parseDateUTC(dataInicio)
-  const fim = parseDateUTC(dataFim)
-  const horasJaAlocadas = alocacoes
-    .filter(
-      (a) =>
-        a.funcionarioId === funcionarioId &&
-        a.id !== excludeId &&
-        parseDateUTC(a.dataInicio) <= fim &&
-        parseDateUTC(a.dataFim) >= inicio
-    )
-    .reduce((sum, a) => sum + (a.horasDiarias ?? 0), 0)
-  return Math.max(0, horasEfetivas - horasJaAlocadas)
-}
-
 const emptyForm: FormData = {
   funcionarioId: '',
   backlogItemId: '',
@@ -168,6 +151,7 @@ const emptyForm: FormData = {
 export default function AlocacaoPage() {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([])
   const [alocacoes, setAlocacoes] = useState<Alocacao[]>([])
+  const [ferias, setFerias] = useState<{ funcionarioId: string; dataInicio: string; dataFim: string }[]>([])
   const [backlogItems, setBacklogItems] = useState<BacklogItemRef[]>([])
   const [areasNegocio, setAreasNegocio] = useState<{ id: string; nome: string; cor: string | null }[]>([])
   const [loading, setLoading] = useState(true)
@@ -196,6 +180,36 @@ export default function AlocacaoPage() {
     horasDiarias: 8,
   })
 
+  const funcionarioSelecionado = funcionarios.find((f) => f.id === form.funcionarioId)
+  const jornadaSelecionada = funcionarioSelecionado?.estagiario ? HORAS_DIARIAS_ESTAGIARIO : alocacaoConfig.horasDiarias
+  const capacidadeSelecionada = funcionarioSelecionado ? dailyProjectCapacity(funcionarioSelecionado, alocacaoConfig) : 0
+  const previsaoAutomatica = backlogItems.find((b) => b.id === form.backlogItemId)?.status === 'EM_ANDAMENTO'
+
+  function calcularHorasDisponiveis(
+    funcionarioId: string,
+    dataInicio: string,
+    dataFim: string,
+    reservas: Alocacao[],
+    config: typeof alocacaoConfig,
+    excludeId?: string,
+  ): number {
+    const funcionario = funcionarios.find((f) => f.id === funcionarioId)
+    if (!funcionario) return 0
+    const capacidade = dailyProjectCapacity(funcionario, config)
+    const fim = parseDateUTC(dataFim)
+    let minimo = capacidade
+    let diasUteis = 0
+    for (const dia = parseDateUTC(dataInicio); dia <= fim; dia.setDate(dia.getDate() + 1)) {
+      if (dia.getDay() === 0 || dia.getDay() === 6) continue
+      diasUteis++
+      if (ferias.some((f) => f.funcionarioId === funcionarioId && parseDateUTC(f.dataInicio) <= dia && parseDateUTC(f.dataFim) >= dia)) return 0
+      const ocupado = reservas.filter((a) => a.funcionarioId === funcionarioId && a.id !== excludeId && (!a.backlogItemId || (a.backlogItem && !['EM_ANDAMENTO', 'CONCLUIDO', 'CANCELADO'].includes(a.backlogItem.status))) && parseDateUTC(a.dataInicio) <= dia && parseDateUTC(a.dataFim) >= dia)
+        .reduce((total, a) => total + (a.horasDiarias ?? capacidade), 0)
+      minimo = Math.min(minimo, Math.max(0, capacidade - ocupado))
+    }
+    return diasUteis ? minimo : 0
+  }
+
   const showSuccess = (msg: string) => {
     setSuccess(msg)
     setTimeout(() => setSuccess(''), 3000)
@@ -208,14 +222,12 @@ export default function AlocacaoPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const periodStart = weeks[0]
-      const periodEnd = addWeeks(weeks[WEEKS_WINDOW - 1], 1)
-
-      const [fRes, aRes, bRes, anRes] = await Promise.all([
+      const [fRes, aRes, bRes, anRes, feriasRes] = await Promise.all([
         fetch('/api/funcionarios'),
-        fetch(`/api/alocacoes?dataInicio=${dateToInput(periodStart)}&dataFim=${dateToInput(periodEnd)}`),
+        fetch('/api/alocacoes'),
         fetch('/api/backlog'),
         fetch('/api/areas-negocio?ativo=true'),
+        fetch('/api/ferias'),
       ])
 
       const [fJson, aJson, bJson, anJson] = await Promise.all([fRes.json(), aRes.json(), bRes.json(), anRes.json()])
@@ -224,12 +236,14 @@ export default function AlocacaoPage() {
       setAlocacoes(Array.isArray(aJson) ? aJson : [])
       setBacklogItems(Array.isArray(bJson) ? bJson : [])
       setAreasNegocio(Array.isArray(anJson) ? anJson : [])
+      const feriasJson = feriasRes.ok ? await feriasRes.json() : []
+      setFerias(Array.isArray(feriasJson) ? feriasJson : [])
     } catch {
       showError('Erro ao carregar dados.')
     } finally {
       setLoading(false)
     }
-  }, [windowStart]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     fetchData()
@@ -298,22 +312,18 @@ export default function AlocacaoPage() {
     if (item) {
       const area = item.solicitacao.areaSolicitante ?? item.solicitacao.area.nome
       const areaCadastrada = areasNegocio.find((a) => a.nome === area)
-      const esforcoTotal = item.solicitacao.esforcoTotal
       setForm((f) => {
-        let dataFim = f.dataFim
-        if (esforcoTotal && esforcoTotal > 0 && f.dataInicio) {
-          const horasEfetivas = alocacaoConfig.horasDiarias * (alocacaoConfig.percentualAlocacao / 100)
-          const diasNecessarios = Math.ceil(esforcoTotal / horasEfetivas)
-          const dataInicio = new Date(f.dataInicio + 'T12:00:00')
-          dataFim = dateToInput(addBusinessDays(dataInicio, diasNecessarios - 1))
-        }
+        const inicio = item.dataInicio?.slice(0, 10) ?? f.dataInicio
+        const fim = item.previsaoConclusao?.slice(0, 10) ?? f.dataFim
+        setHorasDisponiveis(f.funcionarioId && inicio && fim ? calcularHorasDisponiveis(f.funcionarioId, inicio, fim, alocacoes, alocacaoConfig, editAlocacao?.id) : null)
         return {
           ...f,
           backlogItemId,
           titulo: item.solicitacao.titulo,
           areaSolicitante: area,
           cor: area ? (areaCadastrada?.cor ?? getAreaColorHex(area)) : f.cor,
-          dataFim,
+          dataInicio: inicio,
+          dataFim: fim,
         }
       })
     } else {
@@ -654,7 +664,6 @@ export default function AlocacaoPage() {
                   <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                     {fAlocacoes.map((a) => {
                       const bgColor = getAreaColor(a.areaSolicitante, a.cor)
-                      const textColor = getAreaTextColor(bgColor)
                       return (
                         <li key={a.id} className="px-4 py-3 flex items-start gap-3">
                           <div
@@ -747,7 +756,7 @@ export default function AlocacaoPage() {
                   >
                     <option value="">Selecione...</option>
                     {funcionarios.map((f) => (
-                      <option key={f.id} value={f.id}>{f.nome}{f.cargo ? ` — ${f.cargo}` : ''}</option>
+                      <option key={f.id} value={f.id}>{f.nome}{f.estagiario ? ' · Estagiário (6h/dia)' : ''}{f.cargo ? ` — ${f.cargo}` : ''}</option>
                     ))}
                   </select>
                 </div>
@@ -767,7 +776,7 @@ export default function AlocacaoPage() {
                     ))}
                   </select>
                   {form.backlogItemId && (
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Título e área serão preenchidos automaticamente.</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Título e área são preenchidos automaticamente. Atividades em andamento têm a previsão recalculada ao salvar.</p>
                   )}
                 </div>
 
@@ -840,6 +849,7 @@ export default function AlocacaoPage() {
                     <input
                       type="date"
                       value={form.dataFim}
+                      disabled={previsaoAutomatica}
                       onChange={(e) => {
                         const rawValue = e.target.value
                         if (!rawValue) {
@@ -874,13 +884,11 @@ export default function AlocacaoPage() {
                 {horasDisponiveis !== null && (
                   <div className="rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
                     <p className="font-medium text-blue-800 dark:text-blue-300">
-                      Horas disponíveis: <span className="font-bold">{horasDisponiveis.toFixed(1)}h/dia</span>
+                      {previsaoAutomatica ? 'Capacidade para projetos' : 'Limite diário no período'}: <span className="font-bold">{(previsaoAutomatica ? capacidadeSelecionada : horasDisponiveis).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}h/dia</span>
                     </p>
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-                      {alocacaoConfig.horasDiarias}h × {alocacaoConfig.percentualAlocacao}% = {(alocacaoConfig.horasDiarias * alocacaoConfig.percentualAlocacao / 100).toFixed(1)}h efetivas
-                      {horasDisponiveis < (alocacaoConfig.horasDiarias * alocacaoConfig.percentualAlocacao / 100) &&
-                        ` — ${((alocacaoConfig.horasDiarias * alocacaoConfig.percentualAlocacao / 100) - horasDisponiveis).toFixed(1)}h já alocadas em outros projetos`
-                      }
+                      {funcionarioSelecionado?.estagiario ? 'Estagiário: ' : ''}{jornadaSelecionada}h × {alocacaoConfig.percentualAlocacao}% = {capacidadeSelecionada.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}h/dia para projetos.
+                      {' '}Alocações avulsas reservam horas; atividades em andamento compartilham a capacidade restante. Férias reduzem a disponibilidade a zero nos dias cadastrados.
                     </p>
                   </div>
                 )}
@@ -888,22 +896,23 @@ export default function AlocacaoPage() {
                 {/* Horas diárias */}
                 <div>
                   <label htmlFor="horasDiarias" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Horas Diárias <span className="text-red-500">*</span>
+                    {form.backlogItemId ? 'Limite de horas por dia (opcional)' : 'Horas reservadas por dia (opcional)'}
                   </label>
                   <input
                     id="horasDiarias"
                     type="number"
-                    min="0.5"
-                    max={horasDisponiveis ?? undefined}
-                    step="0.5"
+                    min="0.01"
+                    max={capacidadeSelecionada || undefined}
+                    step="0.01"
                     value={form.horasDiarias}
                     onChange={(e) => setForm((f) => ({ ...f, horasDiarias: e.target.value }))}
                     className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                    placeholder={horasDisponiveis !== null ? `Máx: ${horasDisponiveis.toFixed(1)}h` : 'Ex: 4'}
+                    placeholder={form.backlogItemId ? 'Divisão automática da capacidade' : 'Toda a capacidade diária'}
                   />
-                  {horasDisponiveis !== null && Number(form.horasDiarias) > horasDisponiveis && (
+                  {!previsaoAutomatica && horasDisponiveis !== null && Number(form.horasDiarias) > horasDisponiveis && (
                     <p className="mt-1 text-xs text-red-500">Excede as horas disponíveis ({horasDisponiveis.toFixed(1)}h/dia)</p>
                   )}
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{form.backlogItemId ? 'Sem valor, a atividade participa da divisão automática. Um valor informado limita as horas diárias dedicadas a ela.' : 'Sem valor, a alocação reserva toda a capacidade diária para projetos.'}</p>
                 </div>
 
                 <div>

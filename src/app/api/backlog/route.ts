@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { reprojectBacklog, schedulingTransaction } from '@/lib/services/scheduling'
 import { logAudit } from '@/lib/services/audit'
 import { requireOperator, AuthError } from '@/lib/auth'
 import { backlogItemSchema } from '@/lib/validators/schemas'
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
     const items = await prisma.backlogItem.findMany({
       where,
       include: {
+        responsavel: { select: { id: true, nome: true, estagiario: true } },
         solicitacao: {
           include: {
             area: { select: { id: true, nome: true } },
@@ -55,8 +57,8 @@ export async function GET(request: NextRequest) {
     const ranked = [...activeItems, ...inactiveItems].map((item) => ({
       ...item,
       posicao: INACTIVE_BACKLOG_STATUSES.includes(item.status) ? null : item.posicaoManual,
-      responsaveis: item.alocacoes.map((a) => a.funcionario.nome),
-      responsavelId: item.alocacoes.length > 0 ? item.alocacoes[0].funcionario.id : null,
+      responsaveis: item.responsavel ? [item.responsavel.nome] : item.alocacoes.map((a) => a.funcionario.nome),
+      responsavelId: item.responsavelId ?? item.alocacoes[0]?.funcionario.id ?? null,
     }))
 
     return NextResponse.json(ranked)
@@ -162,8 +164,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ids é obrigatório (array)' }, { status: 400 })
     }
 
-    await prisma.backlogItem.deleteMany({
-      where: { id: { in: ids } },
+    await schedulingTransaction(async (tx) => {
+      await tx.alocacao.deleteMany({ where: { backlogItemId: { in: ids } } })
+      await tx.backlogItem.deleteMany({ where: { id: { in: ids } } })
+      await reprojectBacklog(tx)
     })
 
     await logAudit({

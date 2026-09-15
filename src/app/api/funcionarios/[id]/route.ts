@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { reprojectBacklog, schedulingTransaction } from '@/lib/services/scheduling'
+import { SchedulingError } from '@/lib/services/capacity'
 import { requireAdmin, getSession, ROLES, AuthError } from '@/lib/auth'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -32,20 +34,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params
     const body = await request.json()
-    const { nome, cargo, ativo, areaId, userId } = body
+    const { nome, cargo, ativo, areaId, userId, estagiario } = body
 
     if (nome !== undefined && !nome?.trim()) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
     }
 
+    if (estagiario !== undefined && typeof estagiario !== 'boolean') throw new SchedulingError('estagiario deve ser verdadeiro ou falso')
     const data: Record<string, unknown> = {}
+    if (estagiario !== undefined) data.estagiario = estagiario
     if (nome !== undefined) data.nome = nome.trim()
     if (cargo !== undefined) data.cargo = cargo?.trim() || null
     if (ativo !== undefined) data.ativo = ativo
     if (areaId !== undefined) data.areaId = areaId || null
     if (userId !== undefined) data.userId = userId || null
 
-    const funcionario = await prisma.funcionario.update({
+    const funcionario = await schedulingTransaction(async (tx) => {
+    const result = await tx.funcionario.update({
       where: { id },
       data,
       include: {
@@ -54,9 +59,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
+    if (estagiario !== undefined || ativo !== undefined) await reprojectBacklog(tx, [id])
+    return result
+    })
     return NextResponse.json(funcionario)
   } catch (error) {
-    if (error instanceof AuthError) {
+    if (error instanceof AuthError || error instanceof SchedulingError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[PUT /api/funcionarios/[id]]', error)
@@ -69,7 +77,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await requireAdmin()
     const { id } = await params
 
-    await prisma.funcionario.delete({ where: { id } })
+    await schedulingTransaction(async (tx) => {
+      await tx.backlogItem.updateMany({ where: { responsavelId: id, status: 'EM_ANDAMENTO' }, data: { previsaoConclusao: null } })
+      await tx.funcionario.delete({ where: { id } })
+    })
 
     return NextResponse.json({ message: 'Colaborador excluído com sucesso' })
   } catch (error) {

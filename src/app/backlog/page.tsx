@@ -14,6 +14,8 @@ interface Funcionario {
   id: string
   nome: string
   cargo: string | null
+  estagiario: boolean
+  ativo: boolean
   area: { id: string; nome: string } | null
 }
 
@@ -27,6 +29,7 @@ interface BacklogItem {
   status: string
   dataInicio: string | null
   previsaoConclusao: string | null
+  dataConclusao: string | null
   responsaveis?: string[]
   responsavelId?: string | null
   alocacoes?: { funcionario: { id: string; nome: string } }[]
@@ -117,7 +120,6 @@ export default function BacklogPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editStatus, setEditStatus] = useState<string>('')
   const [editDataInicio, setEditDataInicio] = useState('')
-  const [editPrevisao, setEditPrevisao] = useState('')
   const [editResponsavelId, setEditResponsavelId] = useState<string>('')
   const [saving, setSaving] = useState(false)
 
@@ -261,7 +263,6 @@ export default function BacklogPage() {
     setEditingId(item.id)
     setEditStatus(item.status)
     setEditDataInicio(toInputDate(item.dataInicio))
-    setEditPrevisao(toInputDate(item.previsaoConclusao))
     setEditResponsavelId(item.responsavelId ?? '')
   }
 
@@ -270,6 +271,10 @@ export default function BacklogPage() {
   }
 
   const saveEditing = async (id: string) => {
+    if (editStatus === 'EM_ANDAMENTO') {
+      if (!editDataInicio) { showError('Informe a data de início para colocar a atividade em andamento.'); return }
+      if (!editResponsavelId) { showError('Selecione o responsável para calcular a previsão.'); return }
+    }
     setSaving(true)
     try {
       const item = items.find((i) => i.id === id)
@@ -278,7 +283,6 @@ export default function BacklogPage() {
       const body: Record<string, unknown> = {
         status: editStatus,
         dataInicio: editDataInicio || null,
-        previsaoConclusao: editPrevisao || null,
       }
 
       if (responsavelChanged) {
@@ -596,6 +600,9 @@ export default function BacklogPage() {
                       <div><span className="font-medium text-gray-500 dark:text-gray-500">Score:</span> <strong className="text-gray-900 dark:text-white">{item.scorePriorizacao?.toFixed(2) ?? '—'}</strong></div>
                       <div><span className="font-medium text-gray-500 dark:text-gray-500">Ganho:</span> {GAIN_TYPE_LABELS[item.tipoGanho] ?? item.tipoGanho}</div>
                       <div><span className="font-medium text-gray-500 dark:text-gray-500">Valor:</span> {item.valorGanho != null ? item.valorGanho.toLocaleString('pt-BR') : '—'}</div>
+                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Início:</span> {formatDateBR(item.dataInicio)}</div>
+                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Previsão:</span> {formatDateBR(item.previsaoConclusao)}</div>
+                      <div className="col-span-2"><span className="font-medium text-gray-500 dark:text-gray-500">Conclusão:</span> {formatDateBR(item.dataConclusao)}</div>
                     </div>
                     {isEditing ? (
                       <div className="space-y-2">
@@ -606,19 +613,20 @@ export default function BacklogPage() {
                           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Responsável</label>
                           <select value={editResponsavelId} onChange={(e) => setEditResponsavelId(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
                             <option value="">— Sem responsável —</option>
-                            {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome}{f.area ? ` (${f.area.nome})` : ''}</option>)}
+                            {funcionarios.filter((f) => f.ativo || f.id === editResponsavelId).map((f) => <option key={f.id} value={f.id}>{f.nome}{f.estagiario ? ' · Estagiário (6h/dia)' : ''}{!f.ativo ? ' · Inativo' : ''}{f.area ? ` (${f.area.nome})` : ''}</option>)}
                           </select>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Início</label>
-                            <input type="date" value={editDataInicio} onChange={(e) => setEditDataInicio(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                            <label htmlFor={`inicio-mobile-${item.id}`} className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Início{editStatus === 'EM_ANDAMENTO' ? ' *' : ''}</label>
+                            <input id={`inicio-mobile-${item.id}`} type="date" required={editStatus === 'EM_ANDAMENTO'} value={editDataInicio} onChange={(e) => setEditDataInicio(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Previsão</label>
-                            <input type="date" value={editPrevisao} onChange={(e) => setEditPrevisao(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Previsão automática</p>
+                            <p className="text-xs text-teal-700 dark:text-teal-300">{editStatus === 'EM_ANDAMENTO' ? 'Calculada ao salvar' : formatDateBR(item.previsaoConclusao)}</p>
                           </div>
                         </div>
+                        {editStatus === 'EM_ANDAMENTO' && <p className="text-xs text-gray-500 dark:text-gray-400">Informe o início e o responsável. A previsão considera o esforço, a jornada, as demandas paralelas e as férias.</p>}
                         <div className="flex gap-2">
                           <button onClick={() => saveEditing(item.id)} disabled={saving} className="flex-1 rounded py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50">{saving ? '...' : 'Salvar'}</button>
                           <button onClick={cancelEditing} className="flex-1 rounded py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
@@ -658,6 +666,7 @@ export default function BacklogPage() {
                     <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Status</th>
                     <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Início</th>
                     <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Previsão</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">CONCLUSÃO</th>
                     <th className="px-2 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Ações</th>
                   </tr>
                 </thead>
@@ -669,7 +678,7 @@ export default function BacklogPage() {
                       <Fragment key={item.id}>
                         {index === activeDisplayItems.length && concludedItems.length > 0 && activeDisplayItems.length > 0 && (
                           <tr>
-                            <td colSpan={16} className="px-2 py-2 bg-gray-50 dark:bg-gray-700/50">
+                            <td colSpan={17} className="px-2 py-2 bg-gray-50 dark:bg-gray-700/50">
                               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Concluídas / Canceladas</span>
                             </td>
                           </tr>
@@ -703,12 +712,13 @@ export default function BacklogPage() {
                           {isEditing ? (
                             <select
                               value={editResponsavelId}
+                              aria-label="Responsável"
                               onChange={(e) => setEditResponsavelId(e.target.value)}
                               className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
                             >
                               <option value="">— Sem responsável —</option>
-                              {funcionarios.map((f) => (
-                                <option key={f.id} value={f.id}>{f.nome}{f.area ? ` (${f.area.nome})` : ''}</option>
+                              {funcionarios.filter((f) => f.ativo || f.id === editResponsavelId).map((f) => (
+                                <option key={f.id} value={f.id}>{f.nome}{f.estagiario ? ' · Estagiário (6h/dia)' : ''}{!f.ativo ? ' · Inativo' : ''}{f.area ? ` (${f.area.nome})` : ''}</option>
                               ))}
                             </select>
                           ) : (
@@ -771,6 +781,8 @@ export default function BacklogPage() {
                           {isEditing ? (
                             <input
                               type="date"
+                              aria-label="Data de início"
+                              required={editStatus === 'EM_ANDAMENTO'}
                               value={editDataInicio}
                               onChange={(e) => setEditDataInicio(e.target.value)}
                               className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -782,16 +794,15 @@ export default function BacklogPage() {
 
                         {/* Previsão Conclusão */}
                         <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {isEditing ? (
-                            <input
-                              type="date"
-                              value={editPrevisao}
-                              onChange={(e) => setEditPrevisao(e.target.value)}
-                              className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
+                          {isEditing && editStatus === 'EM_ANDAMENTO' ? (
+                            <span className="text-teal-700 dark:text-teal-300" title="Calculada a partir do esforço e da capacidade do responsável, considerando demandas paralelas e férias.">Calculada ao salvar</span>
                           ) : (
                             formatDateBR(item.previsaoConclusao)
                           )}
+                        </td>
+
+                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          {formatDateBR(item.dataConclusao)}
                         </td>
 
                         {/* Actions */}

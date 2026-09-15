@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { schedulingTransaction } from '@/lib/services/scheduling'
+import { SchedulingError } from '@/lib/services/capacity'
 import { getAIProvider } from '@/lib/ai'
 import { MockProvider } from '@/lib/ai/mock-provider'
 import { makeEffortKey } from '@/lib/services/effort-calculator'
 import { logAudit } from '@/lib/services/audit'
-import { recalculateBacklogItemForSolicitacao } from '@/lib/services/prioritization'
+import { recalculateBacklogItemForSolicitacao, rebalancePrioritization } from '@/lib/services/prioritization'
 import type { AIAnalysisRequest, AIAnalysisResponse, ComponenteParaIA, CriterioParaIA } from '@/lib/ai/types'
 
 export const maxDuration = 60
@@ -166,7 +168,7 @@ export async function POST(
     })
 
     // 7-9. Replace criteria and update total atomically so the current memory is preserved if any write fails.
-    const { criteriosCriados, esforcoTotal } = await prisma.$transaction(async (tx) => {
+    const { criteriosCriados, esforcoTotal } = await schedulingTransaction(async (tx) => {
       await tx.solicitacaoCriterio.deleteMany({
         where: { solicitacaoId: id },
       })
@@ -205,10 +207,11 @@ export async function POST(
         },
       })
 
+      await recalculateBacklogItemForSolicitacao(id, total, tx)
       return { criteriosCriados: created, esforcoTotal: total }
     })
 
-    await recalculateBacklogItemForSolicitacao(id, esforcoTotal)
+    await rebalancePrioritization()
 
     // 10. Audit
     await logAudit({
@@ -233,6 +236,7 @@ export async function POST(
       esforcoTotal,
     })
   } catch (error) {
+    if (error instanceof SchedulingError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('[POST /api/solicitacoes/[id]/analisar]', error)
     const message = error instanceof Error ? error.message : 'Erro desconhecido'
     return NextResponse.json({ error: `Erro ao analisar solicitação: ${message}` }, { status: 500 })

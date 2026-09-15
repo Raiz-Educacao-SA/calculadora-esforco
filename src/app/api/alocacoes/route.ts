@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOperator, AuthError } from '@/lib/auth'
+import { SchedulingError } from '@/lib/services/capacity'
+import { schedulingTransaction } from '@/lib/services/scheduling'
+import { saveAllocation } from '@/lib/services/allocation'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,29 +17,17 @@ export async function GET(request: NextRequest) {
     if (funcionarioId) where.funcionarioId = funcionarioId
 
     if (dataInicio || dataFim) {
-      where.OR = [
-        {
-          dataInicio: {
-            ...(dataInicio ? { gte: new Date(dataInicio) } : {}),
-            ...(dataFim ? { lte: new Date(dataFim) } : {}),
-          },
-        },
-        {
-          dataFim: {
-            ...(dataInicio ? { gte: new Date(dataInicio) } : {}),
-            ...(dataFim ? { lte: new Date(dataFim) } : {}),
-          },
-        },
-      ]
+      if (dataFim) where.dataInicio = { lte: new Date(`${dataFim.slice(0, 10)}T23:59:59.999Z`) }
+      if (dataInicio) where.dataFim = { gte: new Date(`${dataInicio.slice(0, 10)}T00:00:00.000Z`) }
     }
 
     const alocacoes = await prisma.alocacao.findMany({
       where,
       include: {
-        funcionario: { select: { id: true, nome: true, cargo: true } },
+        funcionario: { select: { id: true, nome: true, cargo: true, estagiario: true } },
         backlogItem: {
           select: {
-            id: true,
+            id: true, status: true, dataInicio: true, previsaoConclusao: true, dataConclusao: true,
             solicitacao: {
               select: {
                 titulo: true,
@@ -61,47 +52,11 @@ export async function POST(request: NextRequest) {
   try {
     await requireOperator()
     const body = await request.json()
-    const { funcionarioId, backlogItemId, titulo, dataInicio, dataFim, areaSolicitante, cor, horasDiarias } = body
-
-    if (!funcionarioId) {
-      return NextResponse.json({ error: 'funcionarioId é obrigatório' }, { status: 400 })
-    }
-    if (!titulo?.trim()) {
-      return NextResponse.json({ error: 'Título é obrigatório' }, { status: 400 })
-    }
-    if (!dataInicio || !dataFim) {
-      return NextResponse.json({ error: 'Data início e data fim são obrigatórias' }, { status: 400 })
-    }
-
-    const alocacao = await prisma.alocacao.create({
-      data: {
-        funcionarioId,
-        backlogItemId: backlogItemId || null,
-        titulo: titulo.trim(),
-        dataInicio: new Date(dataInicio),
-        dataFim: new Date(dataFim),
-        areaSolicitante: areaSolicitante?.trim() || null,
-        cor: cor?.trim() || null,
-        horasDiarias: horasDiarias != null ? Number(horasDiarias) : null,
-      },
-      include: {
-        funcionario: { select: { id: true, nome: true, cargo: true } },
-      },
-    })
-
-    if (backlogItemId) {
-      await prisma.backlogItem.update({
-        where: { id: backlogItemId },
-        data: {
-          dataInicio: new Date(dataInicio),
-          previsaoConclusao: new Date(dataFim),
-        },
-      })
-    }
+    const alocacao = await schedulingTransaction((tx) => saveAllocation(tx, body))
 
     return NextResponse.json(alocacao, { status: 201 })
   } catch (error) {
-    if (error instanceof AuthError) {
+    if (error instanceof AuthError || error instanceof SchedulingError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('[POST /api/alocacoes]', error)

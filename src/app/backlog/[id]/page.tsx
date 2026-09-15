@@ -81,8 +81,23 @@ interface BacklogItemDetail {
   ganhoNormalizado: number
   scorePriorizacao: number
   status: BacklogStatus
+  dataInicio: string | null
+  previsaoConclusao: string | null
+  dataConclusao: string | null
+  responsavelId: string | null
   posicao?: number | null
   solicitacao?: SolicitacaoDetail | null
+}
+
+interface FuncionarioOption {
+  id: string
+  nome: string
+  ativo: boolean
+  estagiario: boolean
+}
+
+function formatCivilDate(value: string | null): string {
+  return value ? value.slice(0, 10).split('-').reverse().join('/') : '—'
 }
 
 export default function BacklogDetailPage() {
@@ -97,6 +112,9 @@ export default function BacklogDetailPage() {
   const [posicaoRanking, setPosicaoRanking] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [newStatus, setNewStatus] = useState('')
+  const [dataInicio, setDataInicio] = useState('')
+  const [responsavelId, setResponsavelId] = useState('')
+  const [funcionarios, setFuncionarios] = useState<FuncionarioOption[]>([])
   const [gainForm, setGainForm] = useState({
     tipoGanho: '',
     valorGanho: '',
@@ -138,6 +156,8 @@ export default function BacklogDetailPage() {
       const bi = await biRes.json()
       setBacklogItem(bi)
       setNewStatus(bi.status)
+      setDataInicio(bi.dataInicio?.slice(0, 10) ?? '')
+      setResponsavelId(bi.responsavelId ?? '')
       setGainForm({
         tipoGanho: bi.tipoGanho ?? '',
         valorGanho: bi.valorGanho != null ? String(bi.valorGanho) : '',
@@ -160,6 +180,13 @@ export default function BacklogDetailPage() {
   }, [id, refreshRanking])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    fetch('/api/funcionarios')
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setFuncionarios(Array.isArray(data) ? data : []))
+      .catch(() => setMessage({ type: 'error', text: 'Erro ao carregar os colaboradores. Atualize a página para tentar novamente.' }))
+  }, [])
 
   useEffect(() => {
     const areaId = solicitacao?.area?.id ?? backlogItem?.solicitacao?.area?.id
@@ -213,24 +240,34 @@ export default function BacklogDetailPage() {
   }, [])
 
   const handleStatusUpdate = async () => {
+    if (newStatus === 'EM_ANDAMENTO' && (!dataInicio || !responsavelId)) {
+      setMessage({ type: 'error', text: 'Informe a data de início e o responsável para colocar a atividade em andamento.' })
+      return
+    }
     setSaving(true)
     setMessage(null)
     try {
       const res = await fetch(`/api/backlog/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({
+          status: newStatus,
+          dataInicio: dataInicio || null,
+          ...(responsavelId !== (backlogItem?.responsavelId ?? '') ? { responsavelId } : {}),
+        }),
       })
       if (res.ok) {
         const updated = await res.json()
-        setBacklogItem(updated)
+        setBacklogItem((previous) => previous ? { ...previous, ...updated } : updated)
         await refreshRanking()
-        setMessage({ type: 'success', text: 'Status atualizado com sucesso' })
+        setMessage({ type: 'success', text: newStatus === 'EM_ANDAMENTO' ? 'Atividade atualizada e previsão calculada.' : 'Atividade atualizada com sucesso.' })
         setTimeout(() => setMessage(null), 3000)
       } else {
         const err = await res.json()
         setMessage({ type: 'error', text: err.error || 'Erro ao atualizar' })
       }
+    } catch {
+      setMessage({ type: 'error', text: 'Erro de conexão ao atualizar a atividade.' })
     } finally {
       setSaving(false)
     }
@@ -786,9 +823,33 @@ export default function BacklogDetailPage() {
 
       {/* Alterar Status */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Alterar Status</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Status e planejamento</h2>
+        <div className="grid gap-4 sm:grid-cols-3 mb-4">
+          <div>
+            <label htmlFor="responsavel-planejamento" className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Responsável{newStatus === 'EM_ANDAMENTO' ? ' *' : ''}</label>
+            <select id="responsavel-planejamento" value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)} disabled={isViewer || saving} required={newStatus === 'EM_ANDAMENTO'} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm disabled:opacity-50">
+              <option value="">Selecione...</option>
+              {funcionarios.filter((f) => f.ativo || f.id === responsavelId).map((f) => <option key={f.id} value={f.id}>{f.nome}{f.estagiario ? ' · Estagiário (6h/dia)' : ''}{!f.ativo ? ' · Inativo' : ''}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="inicio-planejamento" className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Data de início{newStatus === 'EM_ANDAMENTO' ? ' *' : ''}</label>
+            <input id="inicio-planejamento" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} disabled={isViewer || saving} required={newStatus === 'EM_ANDAMENTO'} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm disabled:opacity-50" />
+          </div>
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Previsão automática</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">{formatCivilDate(backlogItem.previsaoConclusao)}</p>
+            {newStatus === 'EM_ANDAMENTO' && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Recalculada ao salvar.</p>}
+          </div>
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Conclusão</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">{formatCivilDate(backlogItem.dataConclusao)}</p>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">A previsão considera o esforço, a jornada do responsável, o percentual para projetos, outras demandas e férias. A conclusão é registrada automaticamente ao salvar o status Concluído.</p>
         <div className="flex flex-wrap items-center gap-3">
           <select
+            aria-label="Status da atividade"
             value={newStatus}
             onChange={(e) => setNewStatus(e.target.value)}
             disabled={isViewer}
@@ -805,7 +866,7 @@ export default function BacklogDetailPage() {
           </select>
           <button
             onClick={handleStatusUpdate}
-            disabled={isViewer || saving || newStatus === backlogItem.status}
+            disabled={isViewer || saving || (newStatus === backlogItem.status && dataInicio === (backlogItem.dataInicio?.slice(0, 10) ?? '') && responsavelId === (backlogItem.responsavelId ?? ''))}
             className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Salvando...' : 'Salvar'}

@@ -1,6 +1,7 @@
 # Documentação Técnica — Calculadora de Esforço / Transformação Backlog
 
-**Data**: 2026-06-16  
+**Data**: 2026-09-15
+
 **URL de Produção**: https://transformacao-raiz-backlog.vercel.app  
 **Stack**: Next.js 16, React 19, TypeScript, Tailwind CSS v4, Prisma ORM (PostgreSQL/Supabase)  
 **Autenticação**: Google OAuth + Email/Senha  
@@ -11,6 +12,12 @@
 ## Visão Geral
 
 Sistema de gestão de backlog e cálculo inteligente de esforço para a Raiz Educação. Permite priorizar solicitações de desenvolvimento através de uma matriz de ganho vs. esforço, com suporte a IA para estimativa automática de complexidade.
+
+O planejamento considera a jornada do responsável (6h para estagiários), o percentual
+de capacidade para projetos, as atividades paralelas e as férias. A previsão é
+calculada automaticamente ao salvar uma atividade em andamento. A conclusão registra
+a data da transição para Concluído. Consulte as [regras, arquivos e validações desta
+atualização](ALTERACOES-2026-09-15.md) e o [registro de publicação](RETOMADA.md).
 
 ---
 
@@ -142,22 +149,33 @@ scorePriorizacao Decimal
 status          String   (NAO_INICIADO, PRIORIZADO, EM_ANDAMENTO, CONCLUIDO, CANCELADO)
 dataInicio      DateTime?
 previsaoConclusao DateTime?
+dataConclusao   DateTime?
+responsavelId   String?  (FK Funcionario, onDelete: SetNull)
 createdAt       DateTime
 updatedAt       DateTime
 ```
 Aprovação da solicitação gera um BacklogItem. O status governa a ordem de exibição (ativos antes, concluídos/cancelados ao final).
+
+O responsável pode ser salvo antes do início. Para Em Andamento, são obrigatórios
+início válido, responsável ativo e esforço positivo. O servidor calcula a previsão.
+A conclusão usa a data civil de São Paulo, preserva salvamentos posteriores e é
+limpa quando a atividade é reaberta.
 
 ### Funcionario
 ```
 id              String   @id @default(cuid())
 nome            String
 cargo           String
+estagiario      Boolean  @default(false)
 ativo           Boolean  @default(true)
 areaId          String?
 userId          String?
 createdAt       DateTime
 ```
 Colaborador do time com vinculação opcional a uma área técnica.
+
+`estagiario = true` aplica jornada de 6h/dia; os demais usam a jornada global
+parametrizada. O percentual de projetos incide sobre a jornada de cada colaborador.
 
 ### Alocacao
 ```
@@ -169,9 +187,14 @@ dataInicio      DateTime
 dataFim         DateTime
 areaSolicitante String?
 cor             String   @default("#3b82f6")
-horasDiarias    Int      @default(8)
+horasDiarias    Float?
 ```
 Período de alocação de um funcionário em um backlog item ou tarefa.
+
+Nas reservas fixas, horas vazias reservam toda a capacidade para projetos. Nas
+atividades em andamento, o valor informado limita as horas da atividade; sem valor,
+ela participa da divisão da capacidade disponível. A previsão e o período da
+alocação vinculada são sincronizados pelo servidor.
 
 ### Ferias
 ```
@@ -280,10 +303,14 @@ Taxa horária padrão para cálculos de ganho (tipo REDUCAO_HORAS).
 ### AlocacaoConfig
 ```
 id              String   @id @default(cuid())
-percentualAlocacao Int   @default(80) (%)
-horasDiarias    Int     @default(8)
+percentualAlocacao Float @default(80) (%)
+horasDiarias    Float   @default(8)
 ```
 Configurações padrão de alocação de colaboradores.
+
+O percentual deve ser maior que zero e até 100; a jornada padrão, maior que zero e
+até 24 horas. A jornada de estagiários permanece em 6 horas. Alterar a configuração
+recalcula as previsões das atividades em andamento.
 
 ### AuditLog
 ```
@@ -440,24 +467,24 @@ return (
 
 ### Procedimento de Deploy
 
-1. Navegar para o diretório do projeto:
-   ```powershell
-   cd "C:\Users\rodrigo.vieira\Documents\Transformacao\01 - Projetos\1.11 - Calculadora de Esforço"
-   ```
+1. Na raiz do repositório, conferir o vínculo de `.vercel/project.json` com
+   `transformacao-raiz-backlog` (`prj_WDs3of4w2BwoLv4G0yEzHDtTgyTZ`) usando
+   `vercel project inspect transformacao-raiz-backlog`.
+2. Validar o código: `npx prisma generate`, `npx prisma validate`,
+   `npx tsc --noEmit`, `npm test -- --runInBand`, ESLint dos arquivos alterados e
+   `npx next build`.
+3. Registrar as alterações e a documentação em commit e enviar para `origin/main`.
+4. Executar `vercel --prod --yes`. O build definido em `package.json` gera o
+   Prisma Client, aplica migrations com as variáveis de produção e compila o Next.js.
+5. Confirmar status Ready e o alias `transformacao-raiz-backlog.vercel.app` com
+   `vercel inspect <url-do-deployment>`. Com o projeto correto vinculado, a promoção
+   atribui o alias automaticamente. Corrigir manualmente somente se a inspeção
+   indicar que o endereço esperado não foi atribuído.
+6. Conferir os logs de migration, a resposta HTTP de produção e registrar o
+   resultado em [RETOMADA.md](RETOMADA.md).
 
-2. Deploy para produção:
-   ```powershell
-   vercel --prod
-   ```
-
-3. Aguardar conclusão do build (típico: 3-5 min)
-
-4. Após build, setar alias correto:
-   ```powershell
-   vercel alias set <hash>.vercel.app transformacao-raiz-backlog.vercel.app
-   ```
-   
-   **Nota**: O CLI aliasa para `1-11-calculadora-de-esforco.vercel.app` por padrão (INCORRETO). O alias acima corrige para a URL esperada.
+O comando `npm run build` inclui `prisma migrate deploy` e altera o banco
+configurado. Para conferir somente a compilação, usar `npx next build`.
 
 ### Banco de Dados
 
@@ -590,11 +617,12 @@ ANTHROPIC_API_KEY=...               # se AI_PROVIDER=anthropic
 
 ## Contato & Suporte
 
-- **Repositório**: [Git/GitHub/GitLab — atualizar conforme necessário]
+- **Repositório**: https://github.com/rodrigovieiraraiz/calculadora-esforco
 - **Projeto Vercel**: https://vercel.com/dashboard (projeto `transformacao-raiz-backlog`)
 - **Supabase**: [Dashboard Supabase — atualizar conforme necessário]
 
 ---
 
-**Última Atualização**: 2026-06-16  
-**Versão Documento**: 1.1
+**Última Atualização**: 2026-09-15
+
+**Versão Documento**: 1.2
