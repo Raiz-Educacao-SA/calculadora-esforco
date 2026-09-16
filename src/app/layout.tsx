@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Transformação Backlog',
   description: 'Ferramenta para estimativa e gestão de esforço de desenvolvimento',
+  icons: {
+    icon: { url: '/logo.jpg', type: 'image/jpeg' },
+  },
 }
 
 export default function RootLayout({

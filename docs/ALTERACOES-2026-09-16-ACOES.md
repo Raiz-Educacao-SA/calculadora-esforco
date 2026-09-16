@@ -138,3 +138,18 @@ Publicado no commit `c30595e`, deployment `dpl_Bd6LZza2vwBRHDvSS3j33VhgZj88`,
 em **16/09/2026 às 11:58**, horário de São Paulo. Build de produção aprovado,
 sem migrations pendentes. O endereço principal foi direcionado à versão e
 confirmado com status Ready; `/login` respondeu HTTP 200.
+
+## Identidade visual — logo na aba do navegador
+
+A logo da Raiz Educação passa a ser o ícone da aba (favicon) em todas as páginas,
+incluindo o login. `metadata.icons` no layout raiz aponta para `/logo.jpg` com
+tipo `image/jpeg`. O favicon padrão de `src/app/favicon.ico` foi removido para
+evitar declarações concorrentes.
+
+O site de referência https://controle-codex.vercel.app/ declara o ícone
+`/raiz-educacao.jpg`; a comparação SHA-256 confirmou que é o mesmo arquivo já
+existente em `public/logo.jpg` deste projeto. A imagem foi reaproveitada sem
+alteração. O arquivo permanece público conforme a configuração existente.
+
+ESLint, TypeScript e build local aprovados. Os HTMLs gerados de login e backlog
+contêm exatamente um `rel="icon"`, apontando para `/logo.jpg` com o tipo correto.
