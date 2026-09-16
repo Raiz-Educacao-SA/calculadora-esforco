@@ -102,3 +102,45 @@ Identificar os estagiários existentes no cadastro e conferir o percentual de
 alocação antes de planejar novas atividades. Essa classificação depende de quais
 colaboradores são estagiários e não foi inferida automaticamente.
 Conclusões antigas permanecem vazias, pois não é possível inferir suas datas.
+
+## Atualização de 16/09/2026 — Manual e atividades em andamento
+
+O manual do sistema foi ampliado com os fluxos operacionais atuais. Alysson Alves
+e João Xavier foram identificados como estagiários com base no cargo já cadastrado,
+e as duas atividades em andamento foram recalculadas com a regra vigente.
+
+- João: **Ajustes para publicação da v1 de 26/27**, 40h de esforço;
+  previsão alterada de **16/09/2026 para 18/09/2026**.
+- Sara: **Automatização da alteração de data de vencimento de boletos no TOTVS**,
+  60h de esforço; previsão mantida em **21/09/2026**.
+- Alysson: **Alteração dos SLAs de Serviços de Manutenção no Processo de Compras**
+  permaneceu Concluído, com seu histórico preservado, conforme confirmação do usuário.
+- Dois cadastros e uma alteração de previsão registrados em auditoria em
+  **16/09/2026, entre 14:15:01 e 14:15:04 UTC** (11:15 em São Paulo).
+
+O [registro detalhado](ALTERACOES-2026-09-16.md) contém as alterações do manual,
+as regras do comando de manutenção, os resultados e as validações.
+
+### Publicação
+
+| Registro | Resultado |
+|---|---|
+| Commit da aplicação | [`be68b3e`](https://github.com/Raiz-Educacao-SA/calculadora-esforco/commit/be68b3e) |
+| Deployment | `dpl_GE3siWcZSn4c6pvSifxxEAgiWS8A` — Production / Ready |
+| URL da versão | [transformacao-raiz-backlog-f72scpdr6.vercel.app](https://transformacao-raiz-backlog-f72scpdr6.vercel.app) |
+| Manual publicado | [Manual do Usuário](https://transformacao-raiz-backlog.vercel.app/manual) |
+| Banco no build | 16 migrations existentes; nenhuma migration pendente. |
+
+O build de produção terminou em **16/09/2026 às 14:22:28 UTC** (11:22 em São
+Paulo). O alias principal foi direcionado ao novo deployment e a inspeção pela
+URL principal confirmou o status Ready. `/login` retornou HTTP 200 e `/manual`,
+sem sessão, retornou HTTP 307 para o login.
+
+Os 75 testes, TypeScript, ESLint e build local passaram. A conferência visual
+usou a página estática do build em Edge local, com larguras de 1365px e 390px:
+sem rolagem horizontal, cinco atalhos válidos, títulos sem sobreposição pelo menu
+e controles de impressão ocultos no modo de impressão. A sessão autenticada de
+produção não foi usada nessa conferência visual.
+
+Uma nova prévia após o recálculo retornou as mesmas previsões, sem diferenças
+pendentes. Os registros de auditoria e as alocações foram confirmados no banco.

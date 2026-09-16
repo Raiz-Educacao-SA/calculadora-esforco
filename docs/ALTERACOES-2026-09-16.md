@@ -95,7 +95,7 @@ O comando usa `DIRECT_URL`, quando disponível, ou `DATABASE_URL` do ambiente.
 Não executa migrations nem altera os parâmetros globais de jornada/percentual.
 
 A aplicação em produção ocorreu em **16/09/2026**, com registros de auditoria
-entre **17:15:01 e 17:15:04 UTC** (14:15 em São Paulo): dois registros de
+entre **14:15:01 e 14:15:04 UTC** (11:15 em São Paulo): dois registros de
 `Funcionario` e um de `BacklogItem`, todos com origem `reproject-active-backlog`.
 
 ## Validação
