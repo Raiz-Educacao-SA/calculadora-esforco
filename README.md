@@ -6,6 +6,7 @@ Ferramenta web para calcular esforço de demandas de desenvolvimento usando IA e
 
 - [Documentação técnica do sistema](docs/SISTEMA.md)
 - [Alterações de 15/09/2026: capacidade, previsão e conclusão](docs/ALTERACOES-2026-09-15.md)
+- [Alterações de 16/09/2026: manual operacional e recálculo de atividades existentes](docs/ALTERACOES-2026-09-16.md)
 - [Registro de retomada e publicação](docs/RETOMADA.md)
 
 ## Visão Geral

@@ -18,7 +18,7 @@ export default function ManualPage() {
       <div className="manual-container max-w-4xl mx-auto space-y-6 pb-12">
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-orange-500 font-bold text-lg">RAIZ</span>
@@ -30,6 +30,7 @@ export default function ManualPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Guia completo de uso do sistema de gestão de esforço e backlog
             </p>
+            <p className="text-xs text-teal-700 dark:text-teal-300 mt-2">Atualizado em 16/09/2026 · Capacidade, estagiários, previsão automática e conclusão</p>
           </div>
           <button
             type="button"
@@ -44,6 +45,17 @@ export default function ManualPage() {
           </button>
         </div>
 
+        <nav aria-label="Índice do manual" className="no-print rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 p-4">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Acesso rápido</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-teal-800 dark:text-teal-200">
+            <a className="underline" href="#manual-backlog">Backlog e prioridades</a>
+            <a className="underline" href="#manual-capacidade">Jornada e percentual</a>
+            <a className="underline" href="#manual-estagiarios">Cadastro de estagiários</a>
+            <a className="underline" href="#manual-alocacao">Alocação e férias</a>
+            <a className="underline" href="#manual-duvidas">Recálculo e dúvidas frequentes</a>
+          </div>
+        </nav>
+
         {/* Seção 1 — Visão Geral */}
         <section className="manual-section print-break-inside-avoid bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700">
           <SectionTitle number="1" title="Visão Geral" />
@@ -52,8 +64,9 @@ export default function ManualPage() {
           </p>
           <ul className="space-y-2 mb-4">
             <BulletItem>Calcular esforço de demandas de desenvolvimento usando IA e parametrização</BulletItem>
-            <BulletItem>Priorizar automaticamente o backlog baseado na relação ganho/esforço</BulletItem>
-            <BulletItem>Gerenciar a alocação do time de transformação</BulletItem>
+              <BulletItem>Comparar demandas pela relação ganho/esforço e registrar a ordem de execução do backlog</BulletItem>
+              <BulletItem>Gerenciar a alocação do time de transformação</BulletItem>
+              <BulletItem>Projetar datas conforme a capacidade de cada colaborador e acompanhar a conclusão das atividades</BulletItem>
           </ul>
           <div className="flex items-center gap-2 rounded-md bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-700 px-4 py-3">
             <svg className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -120,18 +133,75 @@ export default function ManualPage() {
           </div>
 
           {/* 3.2 Backlog */}
-          <div className="print-break-inside-avoid mb-6">
+          <div id="manual-backlog" className="scroll-mt-20 lg:scroll-mt-6 mb-6">
             <SubsectionTitle number="3.2" title="Backlog Priorizado" />
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              A posição mostra a ordem de execução registrada. O score ajuda a comparar o ganho em relação ao esforço;
+              uma repriorização manual pode colocar uma demanda de score menor antes de outra de score maior.
+            </p>
             <ul className="space-y-1">
-              <BulletItem>Lista todas as demandas ordenadas por score de priorização</BulletItem>
+              <BulletItem>O ranking preserva as posições registradas. Entre os itens ainda não iniciados, os que estão nas cinco primeiras posições recebem o status Priorizado; iniciar uma atividade continua sendo uma ação do operador.</BulletItem>
               <BulletItem>Demandas ativas aparecem no topo; concluídas/canceladas ao final com separador visual</BulletItem>
               <BulletItem><strong>Filtros:</strong> Solicitante, Área Solicitante, Área Técnica, Status, Tipo de Ganho</BulletItem>
-              <BulletItem><strong>Edição inline:</strong> status, responsável e data de início</BulletItem>
-              <BulletItem><strong>Previsão automática:</strong> ao salvar Em Andamento, informe o início e o responsável. O prazo usa o esforço e a capacidade disponível, considerando jornada, percentual para projetos, atividades paralelas e férias.</BulletItem>
-              <BulletItem><strong>Conclusão:</strong> preenchida com a data do dia ao salvar Concluído. Reabrir a atividade limpa essa data.</BulletItem>
-              <BulletItem>Seleção em lote para remoção de itens</BulletItem>
-              <BulletItem>Clique no título de uma demanda para abrir o detalhe completo</BulletItem>
+              <BulletItem>Clique no título para abrir os detalhes. Use a edição na própria lista para alterar status, responsável e início. O perfil Viewer apenas consulta.</BulletItem>
+              <BulletItem>Na remoção em lote, confira os itens selecionados antes de confirmar. As alocações vinculadas são removidas e as previsões afetadas são recalculadas.</BulletItem>
             </ul>
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <caption className="text-left font-semibold text-gray-900 dark:text-white mb-2">Como ler as colunas de planejamento</caption>
+                <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                  <tr><th scope="col" className="p-2">Coluna</th><th scope="col" className="p-2">Significado</th></tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
+                  <tr><th scope="row" className="p-2 align-top">Esforço</th><td className="p-2">Horas estimadas a partir dos critérios da demanda. A jornada do responsável não altera esse total.</td></tr>
+                  <tr><th scope="row" className="p-2 align-top">Início</th><td className="p-2">Data informada pelo operador para começar a distribuição do esforço.</td></tr>
+                  <tr><th scope="row" className="p-2 align-top">Previsão</th><td className="p-2">Data calculada conforme a capacidade disponível. Não é editada manualmente no backlog.</td></tr>
+                  <tr><th scope="row" className="p-2 align-top">CONCLUSÃO</th><td className="p-2">Data registrada ao mudar para Concluído; permite comparar o encerramento com a previsão.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-5 print-break-inside-avoid">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Repriorizar uma demanda</h4>
+              <ol className="space-y-2">
+                <StepItem number={1} label="Arrastar">No computador, arraste a linha ou o indicador de posição de uma demanda ativa para a posição desejada. Termine qualquer edição aberta antes de arrastar.</StepItem>
+                <StepItem number={2} label="Justificar">Informe quem solicitou a priorização, a justificativa e o responsável por repriorizar no formulário exibido.</StepItem>
+                <StepItem number={3} label="Confirmar">Clique em Confirmar priorização. A ordem só é gravada após a confirmação; cancelar mantém a ordem anterior.</StepItem>
+              </ol>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Use a lista sem filtros para conferir a ordem completa. Itens concluídos ou cancelados não podem ser arrastados. Repriorizar não altera a divisão das horas entre atividades em andamento.</p>
+            </div>
+
+            <div className="mt-5 print-break-inside-avoid">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Iniciar e acompanhar uma atividade</h4>
+              <ol className="space-y-2">
+                <StepItem number={1} label="Conferir o esforço">A demanda deve ter um esforço positivo. Abra os detalhes e revise a Memória de Cálculo quando necessário.</StepItem>
+                <StepItem number={2} label="Definir o responsável">Selecione um colaborador ativo. É possível salvar o responsável antes de iniciar a atividade.</StepItem>
+                <StepItem number={3} label="Iniciar">Selecione Em Andamento, preencha a Data de início e salve. Durante a edição, a previsão aparece como Calculada ao salvar.</StepItem>
+                <StepItem number={4} label="Conferir a previsão">O sistema distribui as horas pelo calendário e sincroniza a alocação. Outras atividades em andamento do mesmo colaborador também podem ter a previsão ajustada.</StepItem>
+              </ol>
+            </div>
+
+            <div className="mt-5 print-break-inside-avoid">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Revisar esforço e ganho nos detalhes</h4>
+              <ul className="space-y-1">
+                <BulletItem>Na <strong>Memória de Cálculo</strong>, ajuste critérios e complexidades e clique em <strong>Recalcular esforço</strong>. O indicador de alterações pendentes sinaliza que o total precisa ser atualizado.</BulletItem>
+                <BulletItem><strong>Reestimar com IA</strong> refaz a análise da solicitação e substitui a seleção de critérios. Revise o resultado antes de usá-lo no planejamento.</BulletItem>
+                <BulletItem>Em <strong>Ganho Esperado</strong>, revise tipo, valor e premissa e salve. O ganho normalizado e o score são atualizados; a ordem manual de execução permanece registrada.</BulletItem>
+                <BulletItem>Um novo esforço recalcula a previsão da atividade em andamento e das demandas paralelas afetadas. Alterar somente a jornada ou o percentual muda a capacidade e a previsão, mantendo as horas de esforço.</BulletItem>
+              </ul>
+            </div>
+
+            <div className="mt-5 print-break-inside-avoid">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Concluir, cancelar e reabrir</h4>
+              <ul className="space-y-1">
+                <BulletItem>Ao salvar <strong>Concluído</strong>, a coluna CONCLUSÃO recebe a data do dia no calendário de São Paulo. Salvar novamente mantém essa data; a conclusão não pode ser anterior ao início.</BulletItem>
+                <BulletItem>O fim da alocação vinculada é ajustado à conclusão. A ocupação histórica é considerada até essa data e a capacidade futura é liberada.</BulletItem>
+                <BulletItem><strong>Cancelar</strong> retira a demanda do ranking ativo e libera sua alocação. O cancelamento não registra uma data de conclusão.</BulletItem>
+                <BulletItem>Reabrir limpa a conclusão anterior. Para voltar a Em Andamento, confira início, responsável e esforço; a previsão será calculada novamente.</BulletItem>
+                <BulletItem>Demandas concluídas antes da implantação da coluna podem aparecer sem conclusão. O sistema não inventa uma data histórica. Não reabra uma demanda encerrada apenas para preencher essa coluna.</BulletItem>
+              </ul>
+            </div>
           </div>
 
           {/* 3.3 Nova Solicitação */}
@@ -182,7 +252,7 @@ export default function ManualPage() {
           </div>
 
           {/* 3.4 Parametrização */}
-          <div className="print-break-inside-avoid mb-6">
+          <div id="manual-capacidade" className="scroll-mt-20 lg:scroll-mt-6 mb-6">
             <SubsectionTitle number="3.4" title="Parametrização" />
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
               Tabela unificada por área e componente. Define o esforço (horas) para cada combinação critério × complexidade.
@@ -193,6 +263,16 @@ export default function ManualPage() {
               <BulletItem>Edição inline dos valores de esforço</BulletItem>
               <BulletItem>Exclusão de critérios em lote</BulletItem>
             </ul>
+            <div className="mt-4 print-break-inside-avoid">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Alocação em Projetos — administrador</h4>
+              <ol className="space-y-2">
+                <StepItem number={1} label="Jornada padrão">Informe as horas de trabalho por dia dos profissionais que não são estagiários. O padrão inicial é 8h; o valor deve ser maior que zero e até 24h.</StepItem>
+                <StepItem number={2} label="Percentual para projetos">Defina a parcela da jornada disponível para projetos, maior que zero e até 100%. O mesmo percentual é aplicado às duas jornadas.</StepItem>
+                <StepItem number={3} label="Estagiários">A jornada exibida é fixa em 6h/dia. A seleção de quem usa essa jornada é feita no cadastro de colaboradores.</StepItem>
+                <StepItem number={4} label="Salvar e conferir">Confira os cartões de capacidade diária. Ao salvar os parâmetros, as previsões das atividades em andamento são recalculadas.</StepItem>
+              </ol>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mt-3">Exemplo com 80%: jornada padrão de 8h resulta em <strong>6,4h/dia</strong> para projetos; estagiário de 6h resulta em <strong>4,8h/dia</strong>.</p>
+            </div>
           </div>
 
           {/* 3.5–3.7 CRUDs */}
@@ -205,7 +285,7 @@ export default function ManualPage() {
           </div>
 
           {/* 3.8 Alocação */}
-          <div className="print-break-inside-avoid mb-6">
+          <div id="manual-alocacao" className="scroll-mt-20 lg:scroll-mt-6 mb-6">
             <SubsectionTitle number="3.8" title="Alocação de Time" />
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
               Calendário de alocação dos colaboradores do time de transformação.
@@ -213,10 +293,18 @@ export default function ManualPage() {
             <ul className="space-y-1">
               <BulletItem>Visualização por colaborador com blocos coloridos por área/demanda</BulletItem>
               <BulletItem>Criar alocações vinculadas a itens do backlog ou de forma avulsa</BulletItem>
-              <BulletItem><strong>Estagiários:</strong> marque a opção no cadastro de colaboradores para aplicar jornada de 6h/dia. O percentual de projetos definido na Parametrização é aplicado sobre essa jornada.</BulletItem>
-              <BulletItem>Atividades em andamento compartilham a capacidade restante após as reservas. A previsão considera segunda a sexta e férias cadastradas; feriados não são descontados automaticamente.</BulletItem>
-              <BulletItem>Cálculo automático de dias úteis e horas totais da alocação</BulletItem>
+              <BulletItem>Ao selecionar o colaborador, conferir jornada, capacidade para projetos e disponibilidade no período.</BulletItem>
+              <BulletItem><strong>Reserva avulsa ou de demanda ainda não iniciada:</strong> as horas diárias reservam uma parte da capacidade. Sem valor, a reserva ocupa toda a capacidade para projetos no período.</BulletItem>
+              <BulletItem><strong>Atividade em andamento:</strong> a previsão vem do cálculo do backlog. As horas diárias informadas na alocação funcionam como um limite para a atividade; sem limite, ela participa da divisão da capacidade restante.</BulletItem>
+              <BulletItem>O sistema recusa reservas com horas acima da capacidade diária, soma de reservas superior à disponibilidade ou coincidência com férias em dias úteis.</BulletItem>
+              <BulletItem>Para excluir ou desvincular a alocação de uma atividade em andamento, altere primeiro o responsável ou o status pelo backlog.</BulletItem>
+              <BulletItem>Criar, editar ou excluir reservas pode mudar as previsões das atividades do colaborador. Ao trocar o responsável, confira o planejamento dos dois colaboradores envolvidos.</BulletItem>
             </ul>
+            <div className="mt-4 print-break-inside-avoid">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Como as atividades dividem o dia</h4>
+              <p className="text-sm text-gray-700 dark:text-gray-300">As reservas fixas são descontadas primeiro. As atividades em andamento dividem igualmente a capacidade restante, respeitando os limites de horas informados. Quando uma atividade termina, as horas livres são redistribuídas, inclusive no mesmo dia.</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Exemplo: um estagiário com 80% tem 4,8h/dia. Com uma reserva de 0,8h/dia, sobram 4h/dia; duas atividades em andamento recebem inicialmente 2h/dia cada.</p>
+            </div>
           </div>
 
           {/* 3.9 Férias */}
@@ -225,17 +313,28 @@ export default function ManualPage() {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Cadastro de períodos de férias por colaborador. Integrado ao calendário de alocação para evitar conflitos de disponibilidade.
             </p>
+            <ul className="space-y-1 mt-2">
+              <BulletItem>Informe início e fim do período. As duas datas são consideradas na indisponibilidade.</BulletItem>
+              <BulletItem>Cadastrar, alterar ou excluir férias recalcula as previsões das atividades em andamento do colaborador.</BulletItem>
+              <BulletItem>O planejamento considera segunda a sexta e férias cadastradas. Feriados não são descontados automaticamente.</BulletItem>
+            </ul>
           </div>
 
-          {/* 3.10–3.12 Admin */}
+          <div id="manual-estagiarios" className="scroll-mt-20 lg:scroll-mt-6 print-break-inside-avoid mb-6">
+            <SubsectionTitle number="3.10" title="Colaboradores e cadastro de estagiários" />
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Operação disponível ao administrador em Alocação → Colaboradores.</p>
+            <ol className="space-y-2">
+              <StepItem number={1} label="Abrir o cadastro">Cadastre ou edite o colaborador e confira nome, cargo, área técnica e vínculo com a conta de usuário.</StepItem>
+              <StepItem number={2} label="Identificar a jornada">Marque <strong>Estagiário</strong> para aplicar 6h/dia e salve. A lista passa a mostrar Estagiário · 6h/dia.</StepItem>
+              <StepItem number={3} label="Conferir as atividades">Salvar essa opção recalcula as previsões das atividades em andamento do colaborador. Ao mudar para a jornada padrão, desmarque a opção e salve.</StepItem>
+            </ol>
+            <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 rounded-md p-3 mt-3">O texto do campo Cargo não ativa a jornada reduzida. Mesmo que esteja escrito Estagiário, a opção Estagiário precisa estar marcada. Cadastros anteriores à implantação começaram com a opção desmarcada.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Somente responsáveis ativos podem iniciar novas atividades. Ao inativar um colaborador, revise e transfira suas atividades em andamento, pois ele deixa de ter capacidade disponível.</p>
+          </div>
+
+          {/* 3.11–3.12 Admin */}
           <div className="print-break-inside-avoid">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <CrudCard
-                number="3.10"
-                title="Colaboradores"
-                adminOnly
-                description="CRUD dos colaboradores com vínculo a área técnica e conta de usuário."
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <CrudCard
                 number="3.11"
                 title="Usuários"
@@ -246,7 +345,7 @@ export default function ManualPage() {
                 number="3.12"
                 title="Auditoria"
                 adminOnly
-                description="Histórico de todas as alterações com dados anteriores e novos."
+                description="Consulta dos registros de alteração e repriorização, com responsável, data e dados anteriores e novos quando disponíveis."
               />
             </div>
           </div>
@@ -258,9 +357,11 @@ export default function ManualPage() {
           <div className="space-y-3 mb-5">
             <FormulaBlock formula="Esforço Total = Σ (esforço por critério selecionado)" />
             <FormulaBlock formula="Ganho Normalizado = Valor do Ganho × Peso do Tipo de Ganho" />
+            <FormulaBlock formula="Ganho por Redução de Horas = Horas/mês × Valor Hora × Peso" />
             <FormulaBlock formula="Score de Priorização = Ganho Normalizado / Esforço Total" />
+            <FormulaBlock formula="Capacidade diária para projetos = Jornada × Percentual / 100" />
           </div>
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Pesos dos tipos de ganho:</p>
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Pesos padrão dos tipos de ganho:</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <WeightCard
               tipo="Aumento de Receita"
@@ -282,7 +383,8 @@ export default function ManualPage() {
             />
           </div>
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-            Quanto maior o score, maior a relação ganho/esforço e mais prioritária a demanda no ranking do backlog.
+            Quanto maior o score, maior a relação ganho/esforço. A ordem registrada no backlog também considera as repriorizações manuais.
+            A previsão distribui o esforço pelos dias disponíveis, contando o primeiro dia quando útil; dividir esforço pela jornada inteira não considera reservas, percentual ou atividades paralelas.
           </p>
         </section>
 
@@ -311,7 +413,7 @@ export default function ManualPage() {
               role="Admin"
               roleColor="teal"
               title="Parametrizar"
-              description="Configurar áreas técnicas e de negócio, adicionar componentes, definir critérios e valores de esforço por complexidade."
+              description="Configurar critérios e valores de esforço, jornada padrão e percentual para projetos. Conferir no cadastro quais colaboradores são estagiários e registrar as férias."
             />
             <FlowStep
               number={2}
@@ -322,25 +424,49 @@ export default function ManualPage() {
             />
             <FlowStep
               number={3}
-              role="Todos"
-              roleColor="gray"
+              role="Admin / Operator"
+              roleColor="blue"
               title="Gerir Backlog"
-              description="Acompanhar o ranking priorizado, atualizar status das demandas e alocar responsáveis via edição inline."
+              description="Conferir esforço e ganho, definir responsáveis e registrar repriorizações com solicitante e justificativa. O perfil Viewer acompanha a lista."
             />
             <FlowStep
               number={4}
               role="Operator"
               roleColor="blue"
-              title="Alocar Time"
-              description="Criar alocações no calendário vinculando colaboradores às demandas priorizadas. O sistema calcula dias úteis e horas automaticamente."
+              title="Iniciar e planejar"
+              description="Informar início e responsável ao salvar Em Andamento. Conferir a previsão automática, as reservas e as demandas paralelas do colaborador."
             />
             <FlowStep
               number={5}
-              role="Todos"
-              roleColor="gray"
+              role="Admin / Operator"
+              roleColor="blue"
               title="Concluir"
-              description="Marcar demandas como Concluídas. Elas saem do ranking ativo mas permanecem visíveis ao final do backlog."
+              description="Salvar Concluído e conferir a data na coluna CONCLUSÃO. A demanda sai do ranking ativo, preserva o histórico e libera capacidade futura."
             />
+          </div>
+        </section>
+
+        <section id="manual-duvidas" className="manual-section scroll-mt-20 lg:scroll-mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700">
+          <SectionTitle number="7" title="Recálculo e Dúvidas Frequentes" />
+          <div className="space-y-4">
+            <ManualQuestion title="Como atualizar a previsão de uma atividade que já estava em andamento?">
+              Primeiro, confira a opção Estagiário no cadastro e o percentual em Parametrização. Corrigir a jornada ou salvar os parâmetros recalcula as atividades afetadas. Para conferir uma atividade individual, abra a edição no backlog, valide início e responsável, mantenha Em Andamento e salve. A previsão e a alocação serão atualizadas.
+            </ManualQuestion>
+            <ManualQuestion title="Quando usar Recalcular esforço?">
+              Use esse botão nos detalhes quando os critérios, complexidades ou valores de esforço precisarem ser atualizados. Para aplicar apenas uma mudança de jornada, use o cadastro do colaborador ou os parâmetros de alocação. Por exemplo, uma demanda de 40h continua tendo 40h de esforço, mas pode precisar de mais dias quando a capacidade diária é menor.
+            </ManualQuestion>
+            <ManualQuestion title="Por que a previsão mudou ao salvar outra demanda?">
+              As demandas do mesmo responsável compartilham capacidade. Iniciar, transferir, concluir ou cancelar uma atividade, alterar esforço, reservas, férias, jornada ou percentual pode recalcular as previsões paralelas. Trocar a posição no ranking não reserva mais horas para uma atividade.
+            </ManualQuestion>
+            <ManualQuestion title="Por que não consigo iniciar uma atividade ou ela está sem previsão?">
+              Confira data de início válida, esforço maior que zero, responsável ativo e capacidade disponível para projetos. Cadastros antigos podem estar incompletos. Corrija os dados indicados na mensagem de erro e salve novamente.
+            </ManualQuestion>
+            <ManualQuestion title="A previsão considera o que já foi executado?">
+              O cálculo usa o esforço total e a data de início informada. O sistema não possui apontamento de horas realizadas. Por isso, uma atividade ainda aberta pode ter previsão no passado; revise seu esforço e planejamento conforme a situação real. Não altere o início apenas para ocultar um atraso.
+            </ManualQuestion>
+            <ManualQuestion title="O recálculo atualiza demandas concluídas?">
+              O recálculo de capacidade atua sobre atividades Em Andamento. Itens concluídos preservam seu histórico. Reabra uma demanda somente se ela realmente voltou à execução; isso limpa a data de conclusão anterior e permite calcular uma nova previsão.
+            </ManualQuestion>
           </div>
         </section>
 
@@ -355,7 +481,7 @@ export default function ManualPage() {
             >
               transformacao-raiz-backlog.vercel.app
             </a>
-            {' '}&mdash; Atualizado em 12/06/2026
+            {' '}&mdash; Atualizado em 16/09/2026
           </p>
         </footer>
 
@@ -365,6 +491,15 @@ export default function ManualPage() {
 }
 
 /* ─── Sub-components ────────────────────────────────────────────── */
+
+function ManualQuestion({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="print-break-inside-avoid">
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>
+      <p className="text-sm text-gray-700 dark:text-gray-300">{children}</p>
+    </div>
+  )
+}
 
 function SectionTitle({ number, title }: { number: string; title: string }) {
   return (

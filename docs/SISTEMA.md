@@ -1,6 +1,6 @@
 # Documentação Técnica — Calculadora de Esforço / Transformação Backlog
 
-**Data**: 2026-09-15
+**Data**: 2026-09-16
 
 **URL de Produção**: https://transformacao-raiz-backlog.vercel.app  
 **Stack**: Next.js 16, React 19, TypeScript, Tailwind CSS v4, Prisma ORM (PostgreSQL/Supabase)  
@@ -18,6 +18,11 @@ de capacidade para projetos, as atividades paralelas e as férias. A previsão �
 calculada automaticamente ao salvar uma atividade em andamento. A conclusão registra
 a data da transição para Concluído. Consulte as [regras, arquivos e validações desta
 atualização](ALTERACOES-2026-09-15.md) e o [registro de publicação](RETOMADA.md).
+
+O [Manual do Usuário](https://transformacao-raiz-backlog.vercel.app/manual) inclui
+os passos de operação atualizados. Em 16/09/2026 foram revisados os cadastros de
+estagiários e recalculadas as atividades existentes em andamento; consulte o
+[resultado e o comando de manutenção](ALTERACOES-2026-09-16.md).
 
 ---
 
@@ -631,6 +636,6 @@ ANTHROPIC_API_KEY=...               # se AI_PROVIDER=anthropic
 
 ---
 
-**Última Atualização**: 2026-09-15
+**Última Atualização**: 2026-09-16
 
-**Versão Documento**: 1.2
+**Versão Documento**: 1.3
