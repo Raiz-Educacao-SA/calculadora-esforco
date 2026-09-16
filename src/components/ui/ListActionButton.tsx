@@ -22,6 +22,21 @@ type ListActionLinkProps = ActionProps & {
   href: string
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children' | 'title' | 'aria-label' | 'href'>
 
+const actionTooltips: Record<ListAction, string> = {
+  edit: 'Editar',
+  delete: 'Excluir',
+  activate: 'Ativar',
+  deactivate: 'Desativar',
+  view: 'Ver detalhes',
+  save: 'Salvar',
+  cancel: 'Cancelar',
+  download: 'Baixar',
+  complete: 'Marcar como pago',
+  calendar: 'Ver na timeline',
+  documents: 'Ver contratos',
+  open: 'Abrir anexo',
+}
+
 function actionClassName(className = '') {
   return `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-700 sm:h-9 sm:w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-800 disabled:cursor-not-allowed disabled:opacity-45 ${className}`
 }
@@ -148,7 +163,7 @@ function useActionTooltip<T extends HTMLElement>(label: string) {
 }
 
 export function ListActionButton({ action, label, busy = false, disabled, type = 'button', className, onMouseEnter, onMouseLeave, onFocus, onBlur, onClick, ...props }: ListActionButtonProps) {
-  const { triggerRef, tooltip, describedBy, hide, onMouseEnter: showOnHover, onMouseLeave: leaveHover, onFocus: showOnFocus, onBlur: leaveFocus } = useActionTooltip<HTMLButtonElement>(label)
+  const { triggerRef, tooltip, describedBy, hide, onMouseEnter: showOnHover, onMouseLeave: leaveHover, onFocus: showOnFocus, onBlur: leaveFocus } = useActionTooltip<HTMLButtonElement>(actionTooltips[action])
 
   return (
     <>
@@ -175,7 +190,7 @@ export function ListActionButton({ action, label, busy = false, disabled, type =
 }
 
 export function ListActionLink({ action, label, href, className, onMouseEnter, onMouseLeave, onFocus, onBlur, onClick, ...props }: ListActionLinkProps) {
-  const { triggerRef, tooltip, describedBy, hide, onMouseEnter: showOnHover, onMouseLeave: leaveHover, onFocus: showOnFocus, onBlur: leaveFocus } = useActionTooltip<HTMLAnchorElement>(label)
+  const { triggerRef, tooltip, describedBy, hide, onMouseEnter: showOnHover, onMouseLeave: leaveHover, onFocus: showOnFocus, onBlur: leaveFocus } = useActionTooltip<HTMLAnchorElement>(actionTooltips[action])
 
   return (
     <>

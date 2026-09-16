@@ -4,7 +4,7 @@
 
 As ações individuais das listas foram padronizadas com ícones. O botão Editar
 passou a usar um lápis; cada ação tem nome acessível com o registro de destino
-e uma dica exibida ao passar o mouse ou focar pelo teclado. Foram substituídas
+e uma dica curta com a ação, exibida ao passar o mouse ou focar pelo teclado. Foram substituídas
 97 ocorrências de controles em 18 páginas, incluindo versões desktop/mobile
 e estados de edição.
 
@@ -38,6 +38,10 @@ hover e foco, conforme ajuste solicitado após a primeira publicação.
   e em dispositivos com ponteiro de toque; bordas arredondadas e temas claro/escuro.
 - Nome acessível contextual, por exemplo `Editar Transformação`; SVG decorativo
   oculto dos leitores de tela. Foco visível e botão nativo com `type="button"`.
+- Dicas visuais mostram apenas a ação (`Editar`, `Excluir`, `Ver detalhes` etc.),
+  sem nomes de fornecedores, registros, títulos ou datas. O texto é centralizado
+  por ação e compartilhado por botões e links; o contexto do registro permanece
+  no `aria-label` para leitores de tela.
 - Dicas em portal no corpo da página para escapar do recorte de tabelas, com
   posicionamento limitado à janela, atualização na rolagem e fechamento por Esc.
 - `busy` mostra um indicador de carregamento e desabilita novas ativações;
@@ -114,3 +118,18 @@ Publicado no commit `0757f76`, deployment `dpl_7x85ZPxRztikcVd6q8vqLd8qvvCx`,
 em **16/09/2026 às 11:48**, horário de São Paulo. Build de produção aprovado,
 nenhuma migration pendente, endereço principal apontado para a nova versão e
 status Ready confirmado. `/login` respondeu HTTP 200.
+
+## Ajuste posterior — dicas curtas
+
+Todas as dicas dos botões e links de ação passam a exibir apenas a ação:
+Editar, Excluir, Ativar, Desativar, Ver detalhes, Salvar, Cancelar, Baixar,
+Marcar como pago, Ver na timeline, Ver contratos e Abrir anexo.
+O mapeamento fica em `actionTooltips` no componente compartilhado e atende
+automaticamente às 18 telas. O nome contextual permanece no `aria-label`.
+O Manual do Usuário descreve agora as dicas curtas.
+
+ESLint, TypeScript e conferência do diff aprovados. Edge local com APIs
+simuladas confirmou dicas curtas por hover/foco nos cadastros e fornecedores,
+incluindo ativação/desativação, salvar/cancelar inline e o link de contratos,
+em desktop/celular. Escape continua fechando as dicas e os nomes acessíveis
+foram preservados; nenhum erro de execução ou alteração de dados nos testes.

@@ -91,7 +91,7 @@ export default function ManualPage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Como usar os ícones de ações</h2>
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
             As ações de cada registro aparecem como botões com ícones em tons neutros, à direita das listas ou na parte inferior dos cartões no celular.
-            Passe o mouse ou use <strong>Tab</strong> para mostrar a descrição da ação e o nome do registro.
+            Passe o mouse ou use <strong>Tab</strong> para mostrar uma dica curta com a ação, como <strong>Editar</strong>, <strong>Excluir</strong> ou <strong>Ver detalhes</strong>.
             Use <strong>Enter</strong> para acionar o controle e <strong>Esc</strong> para fechar a dica.
           </p>
           <ul className="space-y-2">
