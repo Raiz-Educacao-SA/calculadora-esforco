@@ -35,7 +35,7 @@ visual](ALTERACOES-2026-09-16-ACOES.md) relaciona as telas, o componente e a val
 | Rota | Arquivo | Acesso | Descrição |
 |------|---------|--------|-----------|
 | `/` | `src/app/page.tsx` | Todos | Dashboard com KPIs totais e Top 5 prioridades (exclui itens CONCLUÍDO/CANCELADO) |
-| `/backlog` | `src/app/backlog/page.tsx` | Todos | Listagem do backlog: ativos no topo, concluídos/cancelados ao final com separador visual |
+| `/backlog` | `src/app/backlog/page.tsx` | Todos | Ativos no topo; concluídos/cancelados ao final em seção recolhível com contador, fechada por padrão |
 | `/backlog/[id]` | `src/app/backlog/[id]/page.tsx` | Todos | Página de detalhe de um item do backlog |
 | `/solicitacoes/nova` | `src/app/solicitacoes/nova/page.tsx` | Admin+Operator | Calculadora inteligente: formulário → IA → ajuste manual → aprovação |
 | `/parametrizacao` | `src/app/parametrizacao/page.tsx` | Admin+Operator | Tabela unificada: critério × complexidade × esforço por área/componente |
@@ -433,35 +433,24 @@ const activeBacklogItems = backlogItems
 
 ---
 
-## Backlog — Concluídas no Final (UX — 2026-06-12)
+## Backlog — Concluídas recolhíveis (UX — 2026-09-16)
 
-- **Ordem**: 
-  1. Itens ativos (NAO_INICIADO, PRIORIZADO, EM_ANDAMENTO) ordenados por score DESC
-  2. Separador visual com texto "Concluídas / Canceladas"
-  3. Itens concluídos/cancelados com `opacity-60` para indicar inatividade
+- Ativos mantêm a ordem de priorização registrada no topo.
+- A seção **Concluídas / Canceladas** fica ao final, recolhida por padrão, com
+  contador dos registros que atendem aos filtros. O cabeçalho aparece mesmo
+  quando só existem atividades encerradas e some quando não há nenhuma.
+- `showConcluded` controla os grupos de cartões e linhas da tabela. As linhas
+  recolhidas não são renderizadas; o estado de edição permanece na página.
+- O botão `ConcludedSectionToggle` usa `aria-expanded`, `aria-controls` e
+  acionamento nativo por teclado. O estado é compartilhado por desktop e mobile.
+- Filtrar por CONCLUIDO/CANCELADO abre a seção; limpar filtros a recolhe.
+- Seleção em lote usa somente `visibleItems`; recolher limpa a seleção dos
+  registros encerrados. Contagem, confirmação e IDs enviados ao DELETE usam
+  a mesma seleção visível.
+- Itens encerrados continuam sem arraste, com `opacity-60`, histórico e
+  permissões preservados. Sem alterações de API ou dados.
 
-- **Implementação**: React Fragment para não duplicar JSX, funciona mobile e desktop
-
-```typescript
-const activeItems = items.filter(i => !['CONCLUIDO', 'CANCELADO'].includes(i.status));
-const inactiveItems = items.filter(i => ['CONCLUIDO', 'CANCELADO'].includes(i.status));
-
-return (
-  <>
-    {activeItems.map(item => <BacklogItemCard key={item.id} item={item} />)}
-    {inactiveItems.length > 0 && (
-      <>
-        <div className="border-t-2 border-gray-300 py-4 text-center text-sm font-semibold text-gray-500">
-          Concluídas / Canceladas
-        </div>
-        {inactiveItems.map(item => (
-          <BacklogItemCard key={item.id} item={item} className="opacity-60" />
-        ))}
-      </>
-    )}
-  </>
-);
-```
+Detalhes e validação no [registro da alteração](ALTERACOES-2026-09-16-BACKLOG.md).
 
 ---
 

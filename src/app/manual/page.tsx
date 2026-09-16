@@ -163,10 +163,11 @@ export default function ManualPage() {
             </p>
             <ul className="space-y-1">
               <BulletItem>O ranking preserva as posições registradas. Entre os itens ainda não iniciados, os que estão nas cinco primeiras posições recebem o status Priorizado; iniciar uma atividade continua sendo uma ação do operador.</BulletItem>
-              <BulletItem>Demandas ativas aparecem no topo; concluídas/canceladas ao final com separador visual</BulletItem>
+              <BulletItem>Demandas ativas aparecem no topo. A seção <strong>Concluídas / Canceladas</strong> fica recolhida por padrão ao final; clique no cabeçalho para mostrar ou ocultar os itens. O contador indica a quantidade que atende aos filtros.</BulletItem>
+              <BulletItem>Ao filtrar o Status por <strong>Concluído</strong> ou <strong>Cancelado</strong>, a seção abre automaticamente. Limpar os filtros volta a recolhê-la. O controle funciona no computador e no celular, inclusive com Tab e Enter ou Espaço.</BulletItem>
               <BulletItem><strong>Filtros:</strong> Solicitante, Área Solicitante, Área Técnica, Status, Tipo de Ganho</BulletItem>
               <BulletItem>Clique no título para abrir os detalhes. Use a edição na própria lista para alterar status, responsável e início. O perfil Viewer apenas consulta.</BulletItem>
-              <BulletItem>Na remoção em lote, confira os itens selecionados antes de confirmar. As alocações vinculadas são removidas e as previsões afetadas são recalculadas.</BulletItem>
+              <BulletItem><strong>Selecionar todos</strong> considera apenas os itens visíveis. Recolher a seção limpa a seleção das concluídas/canceladas. Na remoção em lote, confira os itens selecionados antes de confirmar. As alocações vinculadas são removidas e as previsões afetadas são recalculadas.</BulletItem>
             </ul>
 
             <div className="mt-4 overflow-x-auto">

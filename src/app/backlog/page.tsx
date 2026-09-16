@@ -103,6 +103,7 @@ export default function BacklogPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showFormula, setShowFormula] = useState(false)
+  const [showConcluded, setShowConcluded] = useState(false)
   const [isViewer, setIsViewer] = useState(false)
   const [currentUserName, setCurrentUserName] = useState('')
 
@@ -193,6 +194,7 @@ export default function BacklogPage() {
   useEffect(() => { fetchBacklog() }, [fetchBacklog])
 
   const clearFilters = () => {
+    setShowConcluded(false)
     setFilterArea('')
     setFilterStatus('')
     setFilterTipoGanho('')
@@ -224,7 +226,21 @@ export default function BacklogPage() {
       ]
     : activeItems
 
-  const visibleItems = [...activeDisplayItems, ...concludedItems]
+  const displayGroups = [
+    { id: 'active', items: activeDisplayItems, collapsed: false },
+    { id: 'concluded', items: concludedItems, collapsed: !showConcluded },
+  ].filter((group) => group.items.length > 0)
+  const visibleItems = displayGroups.flatMap((group) => group.collapsed ? [] : group.items)
+  const selectedVisibleIds = visibleItems.filter((item) => selected.has(item.id)).map((item) => item.id)
+  const allVisibleSelected = visibleItems.length > 0 && selectedVisibleIds.length === visibleItems.length
+
+  const toggleConcluded = () => {
+    if (showConcluded) {
+      const concludedIds = new Set(concludedItems.map((item) => item.id))
+      setSelected((prev) => new Set([...prev].filter((id) => !concludedIds.has(id))))
+    }
+    setShowConcluded(!showConcluded)
+  }
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -235,17 +251,17 @@ export default function BacklogPage() {
   }
 
   const toggleSelectAll = () => {
-    if (selected.size === items.length) setSelected(new Set())
-    else setSelected(new Set(filteredItems.map((i) => i.id)))
+    setSelected(new Set(allVisibleSelected ? [] : visibleItems.map((item) => item.id)))
   }
 
   const handleBatchDelete = async () => {
+    if (selectedVisibleIds.length === 0) return
     setBatchDeleting(true)
     try {
       const res = await fetch('/api/backlog', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: Array.from(selected) }),
+        body: JSON.stringify({ ids: selectedVisibleIds }),
       })
       const json = await res.json()
       if (!res.ok) { showError(json.error ?? 'Erro ao remover.'); return }
@@ -492,7 +508,11 @@ export default function BacklogPage() {
             </div>
             <div className="flex flex-col gap-1">
               <label htmlFor="filter-status" className="text-xs font-medium text-gray-600 dark:text-gray-400">Status</label>
-              <select id="filter-status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+              <select id="filter-status" value={filterStatus} onChange={(e) => {
+                const status = e.target.value
+                setFilterStatus(status)
+                setShowConcluded(status === 'CONCLUIDO' || status === 'CANCELADO')
+              }}
                 className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
                 <option value="">Todos os status</option>
                 {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -519,10 +539,10 @@ export default function BacklogPage() {
       </div>
 
       {/* Batch selection toolbar */}
-      {selected.size > 0 && !isViewer && (
+      {selectedVisibleIds.length > 0 && !isViewer && (
         <div className="flex items-center gap-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg px-4 py-3">
           <span className="text-sm font-medium text-teal-900 dark:text-teal-200">
-            {selected.size} {selected.size === 1 ? 'item selecionado' : 'itens selecionados'}
+            {selectedVisibleIds.length} {selectedVisibleIds.length === 1 ? 'item selecionado' : 'itens selecionados'}
           </span>
           <button onClick={() => setShowBatchDelete(true)} className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700">
             Remover selecionados
@@ -549,101 +569,104 @@ export default function BacklogPage() {
         ) : (
           <>
             {/* Mobile card list */}
-            <ul className="divide-y divide-gray-100 dark:divide-gray-700 md:hidden">
-              {visibleItems.map((item, index) => {
-                const isEditing = editingId === item.id
-                const isConcluded = item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
-                return (
-                  <Fragment key={item.id}>
-                    {index === activeDisplayItems.length && concludedItems.length > 0 && activeDisplayItems.length > 0 && (
-                      <li className="py-2 px-4 bg-gray-50 dark:bg-gray-700/50">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Concluídas / Canceladas</span>
-                      </li>
-                    )}
-                    <li
-                      draggable={!isViewer && !isEditing && !isConcluded}
-                      onDragStart={(event) => handleDragStart(event, item.id)}
-                      onDragOver={(event) => handleDragOver(event, item.id)}
-                      onDrop={(event) => handleDrop(event, item.id)}
-                      onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
-                      className={`p-4 space-y-3${isConcluded ? ' opacity-60' : ''}${draggedId === item.id ? ' bg-teal-50 dark:bg-teal-900/20' : ''}${dragOverId === item.id ? ' ring-2 ring-teal-400' : ''}`}
-                    >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {!isViewer && (
-                          <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0" />
-                        )}
-                        <span
+            <div className="md:hidden">
+              {displayGroups.map((group) => (
+                <Fragment key={group.id}>
+                  {group.id === 'concluded' && (
+                    <ConcludedSectionToggle count={concludedItems.length} expanded={showConcluded} controls="backlog-concluded-mobile" onToggle={toggleConcluded} />
+                  )}
+                  <ul id={`backlog-${group.id}-mobile`} hidden={group.collapsed} className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {(group.collapsed ? [] : group.items).map((item) => {
+                      const isEditing = editingId === item.id
+                      const isConcluded = item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
+                      return (
+                        <li
+                          key={item.id}
                           draggable={!isViewer && !isEditing && !isConcluded}
                           onDragStart={(event) => handleDragStart(event, item.id)}
-                          className={`text-base shrink-0 ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
-                          title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}
+                          onDragOver={(event) => handleDragOver(event, item.id)}
+                          onDrop={(event) => handleDrop(event, item.id)}
+                          onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
+                          className={`p-4 space-y-3${isConcluded ? ' opacity-60' : ''}${draggedId === item.id ? ' bg-teal-50 dark:bg-teal-900/20' : ''}${dragOverId === item.id ? ' ring-2 ring-teal-400' : ''}`}
                         >
-                          {isConcluded ? '—' : positionLabel(item.posicao ?? 0)}
-                        </span>
-                        <button
-                          onClick={() => router.push(`/backlog/${item.id}`)}
-                          className="text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-left truncate"
-                        >
-                          {item.solicitacao?.titulo ?? '—'}
-                        </button>
-                      </div>
-                      <StatusBadge status={item.status as Parameters<typeof StatusBadge>[0]['status']} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
-                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Solicitante:</span> {item.solicitacao?.solicitante ?? '—'}</div>
-                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Área:</span> {item.solicitacao?.area?.nome ?? '—'}</div>
-                      {item.solicitacao?.zeevNumber && (
-                        <div className="col-span-2"><span className="font-medium text-gray-500 dark:text-gray-500">Nº Zeev:</span> {item.solicitacao.zeevNumber}</div>
-                      )}
-                      <div className="col-span-2"><span className="font-medium text-gray-500 dark:text-gray-500">Responsável:</span> {item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : '—'}</div>
-                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Esforço:</span> {item.solicitacao?.esforcoTotal != null ? `${item.solicitacao.esforcoTotal}h` : '—'}</div>
-                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Score:</span> <strong className="text-gray-900 dark:text-white">{item.scorePriorizacao?.toFixed(2) ?? '—'}</strong></div>
-                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Ganho:</span> {GAIN_TYPE_LABELS[item.tipoGanho] ?? item.tipoGanho}</div>
-                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Valor:</span> {item.valorGanho != null ? item.valorGanho.toLocaleString('pt-BR') : '—'}</div>
-                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Início:</span> {formatDateBR(item.dataInicio)}</div>
-                      <div><span className="font-medium text-gray-500 dark:text-gray-500">Previsão:</span> {formatDateBR(item.previsaoConclusao)}</div>
-                      <div className="col-span-2"><span className="font-medium text-gray-500 dark:text-gray-500">Conclusão:</span> {formatDateBR(item.dataConclusao)}</div>
-                    </div>
-                    {isEditing ? (
-                      <div className="space-y-2">
-                        <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
-                          {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                        </select>
-                        <div>
-                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Responsável</label>
-                          <select value={editResponsavelId} onChange={(e) => setEditResponsavelId(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <option value="">— Sem responsável —</option>
-                            {funcionarios.filter((f) => f.ativo || f.id === editResponsavelId).map((f) => <option key={f.id} value={f.id}>{f.nome}{f.estagiario ? ' · Estagiário (6h/dia)' : ''}{!f.ativo ? ' · Inativo' : ''}{f.area ? ` (${f.area.nome})` : ''}</option>)}
-                          </select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label htmlFor={`inicio-mobile-${item.id}`} className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Início{editStatus === 'EM_ANDAMENTO' ? ' *' : ''}</label>
-                            <input id={`inicio-mobile-${item.id}`} type="date" required={editStatus === 'EM_ANDAMENTO'} value={editDataInicio} onChange={(e) => setEditDataInicio(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {!isViewer && (
+                                <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} aria-label={`Selecionar ${item.solicitacao.titulo}`} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0" />
+                              )}
+                              <span
+                                draggable={!isViewer && !isEditing && !isConcluded}
+                                onDragStart={(event) => handleDragStart(event, item.id)}
+                                className={`text-base shrink-0 ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+                                title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}
+                              >
+                                {isConcluded ? '—' : positionLabel(item.posicao ?? 0)}
+                              </span>
+                              <button
+                                onClick={() => router.push(`/backlog/${item.id}`)}
+                                className="text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-left truncate"
+                              >
+                                {item.solicitacao?.titulo ?? '—'}
+                              </button>
+                            </div>
+                            <StatusBadge status={item.status as Parameters<typeof StatusBadge>[0]['status']} />
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Previsão automática</p>
-                            <p className="text-xs text-teal-700 dark:text-teal-300">{editStatus === 'EM_ANDAMENTO' ? 'Calculada ao salvar' : formatDateBR(item.previsaoConclusao)}</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+                            <div><span className="font-medium text-gray-500 dark:text-gray-500">Solicitante:</span> {item.solicitacao?.solicitante ?? '—'}</div>
+                            <div><span className="font-medium text-gray-500 dark:text-gray-500">Área:</span> {item.solicitacao?.area?.nome ?? '—'}</div>
+                            {item.solicitacao?.zeevNumber && (
+                              <div className="col-span-2"><span className="font-medium text-gray-500 dark:text-gray-500">Nº Zeev:</span> {item.solicitacao.zeevNumber}</div>
+                            )}
+                            <div className="col-span-2"><span className="font-medium text-gray-500 dark:text-gray-500">Responsável:</span> {item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : '—'}</div>
+                            <div><span className="font-medium text-gray-500 dark:text-gray-500">Esforço:</span> {item.solicitacao?.esforcoTotal != null ? `${item.solicitacao.esforcoTotal}h` : '—'}</div>
+                            <div><span className="font-medium text-gray-500 dark:text-gray-500">Score:</span> <strong className="text-gray-900 dark:text-white">{item.scorePriorizacao?.toFixed(2) ?? '—'}</strong></div>
+                            <div><span className="font-medium text-gray-500 dark:text-gray-500">Ganho:</span> {GAIN_TYPE_LABELS[item.tipoGanho] ?? item.tipoGanho}</div>
+                            <div><span className="font-medium text-gray-500 dark:text-gray-500">Valor:</span> {item.valorGanho != null ? item.valorGanho.toLocaleString('pt-BR') : '—'}</div>
+                            <div><span className="font-medium text-gray-500 dark:text-gray-500">Início:</span> {formatDateBR(item.dataInicio)}</div>
+                            <div><span className="font-medium text-gray-500 dark:text-gray-500">Previsão:</span> {formatDateBR(item.previsaoConclusao)}</div>
+                            <div className="col-span-2"><span className="font-medium text-gray-500 dark:text-gray-500">Conclusão:</span> {formatDateBR(item.dataConclusao)}</div>
                           </div>
-                        </div>
-                        {editStatus === 'EM_ANDAMENTO' && <p className="text-xs text-gray-500 dark:text-gray-400">Informe o início e o responsável. A previsão considera o esforço, a jornada, as demandas paralelas e as férias.</p>}
-                        <div className="flex items-center justify-end gap-2">
-                          <ListActionButton action="save" label={`Salvar ${item.solicitacao.titulo}`} onClick={() => saveEditing(item.id)} busy={saving} />
-                          <ListActionButton action="cancel" label={`Cancelar edição de ${item.solicitacao.titulo}`} onClick={cancelEditing} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-end gap-2">
-                        <ListActionButton action="edit" label={`Editar ${item.solicitacao.titulo}`} onClick={(e) => { e.stopPropagation(); startEditing(item) }} disabled={isViewer} />
-                        <ListActionButton action="view" label={`Ver detalhes de ${item.solicitacao.titulo}`} onClick={() => router.push(`/backlog/${item.id}`)} />
-                      </div>
-                    )}
-                    </li>
-                  </Fragment>
-                )
-              })}
-            </ul>
+                          {isEditing ? (
+                            <div className="space-y-2">
+                              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                              </select>
+                              <div>
+                                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Responsável</label>
+                                <select value={editResponsavelId} onChange={(e) => setEditResponsavelId(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                  <option value="">— Sem responsável —</option>
+                                  {funcionarios.filter((f) => f.ativo || f.id === editResponsavelId).map((f) => <option key={f.id} value={f.id}>{f.nome}{f.estagiario ? ' · Estagiário (6h/dia)' : ''}{!f.ativo ? ' · Inativo' : ''}{f.area ? ` (${f.area.nome})` : ''}</option>)}
+                                </select>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label htmlFor={`inicio-mobile-${item.id}`} className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Início{editStatus === 'EM_ANDAMENTO' ? ' *' : ''}</label>
+                                  <input id={`inicio-mobile-${item.id}`} type="date" required={editStatus === 'EM_ANDAMENTO'} value={editDataInicio} onChange={(e) => setEditDataInicio(e.target.value)} className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Previsão automática</p>
+                                  <p className="text-xs text-teal-700 dark:text-teal-300">{editStatus === 'EM_ANDAMENTO' ? 'Calculada ao salvar' : formatDateBR(item.previsaoConclusao)}</p>
+                                </div>
+                              </div>
+                              {editStatus === 'EM_ANDAMENTO' && <p className="text-xs text-gray-500 dark:text-gray-400">Informe o início e o responsável. A previsão considera o esforço, a jornada, as demandas paralelas e as férias.</p>}
+                              <div className="flex items-center justify-end gap-2">
+                                <ListActionButton action="save" label={`Salvar ${item.solicitacao.titulo}`} onClick={() => saveEditing(item.id)} busy={saving} />
+                                <ListActionButton action="cancel" label={`Cancelar edição de ${item.solicitacao.titulo}`} onClick={cancelEditing} />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-2">
+                              <ListActionButton action="edit" label={`Editar ${item.solicitacao.titulo}`} onClick={(e) => { e.stopPropagation(); startEditing(item) }} disabled={isViewer} />
+                              <ListActionButton action="view" label={`Ver detalhes de ${item.solicitacao.titulo}`} onClick={() => router.push(`/backlog/${item.id}`)} />
+                            </div>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </Fragment>
+              ))}
+            </div>
 
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
@@ -651,7 +674,7 @@ export default function BacklogPage() {
                 <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
                     <th className="px-2 py-2 w-8">
-                      <input type="checkbox" checked={filteredItems.length > 0 && selected.size === filteredItems.length} onChange={toggleSelectAll} disabled={isViewer} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Selecionar todos" />
+                      <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAll} disabled={isViewer || visibleItems.length === 0} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Selecionar todos os itens visíveis" />
                     </th>
                     <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">#</th>
                     <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Nº Zeev</th>
@@ -671,178 +694,183 @@ export default function BacklogPage() {
                     <th className="px-2 py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 whitespace-nowrap">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                  {visibleItems.map((item, index) => {
-                    const isEditing = editingId === item.id
-                    const isConcluded = item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
-                    return (
-                      <Fragment key={item.id}>
-                        {index === activeDisplayItems.length && concludedItems.length > 0 && activeDisplayItems.length > 0 && (
-                          <tr>
-                            <td colSpan={17} className="px-2 py-2 bg-gray-50 dark:bg-gray-700/50">
-                              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Concluídas / Canceladas</span>
-                            </td>
-                          </tr>
-                        )}
-                        <tr
-                          draggable={!isViewer && !isEditing && !isConcluded}
-                          onDragStart={(event) => handleDragStart(event, item.id)}
-                          onDragOver={(event) => handleDragOver(event, item.id)}
-                          onDrop={(event) => handleDrop(event, item.id)}
-                          onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
-                          className={`hover:bg-gray-50 dark:hover:bg-gray-700${isConcluded ? ' opacity-60' : ''}${draggedId === item.id ? ' bg-teal-50 dark:bg-teal-900/20' : ''}${dragOverId === item.id ? ' ring-2 ring-inset ring-teal-400' : ''}`}
-                        >
-                        <td className="px-2 py-2 w-8">
-                          <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} disabled={isViewer} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed" />
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          <span
+                {displayGroups.map((group) => (
+                  <Fragment key={group.id}>
+                    {group.id === 'concluded' && (
+                      <tbody>
+                        <tr>
+                          <td colSpan={17} className="p-0">
+                            <ConcludedSectionToggle count={concludedItems.length} expanded={showConcluded} controls="backlog-concluded-desktop" onToggle={toggleConcluded} />
+                          </td>
+                        </tr>
+                      </tbody>
+                    )}
+                    <tbody id={`backlog-${group.id}-desktop`} hidden={group.collapsed} className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                      {(group.collapsed ? [] : group.items).map((item) => {
+                        const isEditing = editingId === item.id
+                        const isConcluded = item.status === 'CONCLUIDO' || item.status === 'CANCELADO'
+                        return (
+                          <tr
+                            key={item.id}
                             draggable={!isViewer && !isEditing && !isConcluded}
                             onDragStart={(event) => handleDragStart(event, item.id)}
-                            className={`inline-flex min-w-6 items-center gap-1 ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
-                            title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}
+                            onDragOver={(event) => handleDragOver(event, item.id)}
+                            onDrop={(event) => handleDrop(event, item.id)}
+                            onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
+                            className={`hover:bg-gray-50 dark:hover:bg-gray-700${isConcluded ? ' opacity-60' : ''}${draggedId === item.id ? ' bg-teal-50 dark:bg-teal-900/20' : ''}${dragOverId === item.id ? ' ring-2 ring-inset ring-teal-400' : ''}`}
                           >
-                            <span className="text-gray-400 dark:text-gray-500">::</span>
-                            <span>{isConcluded ? '—' : positionLabel(item.posicao ?? 0)}</span>
-                          </span>
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {item.solicitacao?.zeevNumber ?? '—'}
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[140px] whitespace-nowrap">
-                          {isEditing ? (
-                            <select
-                              value={editResponsavelId}
-                              aria-label="Responsável"
-                              onChange={(e) => setEditResponsavelId(e.target.value)}
-                              className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
+                            <td className="px-2 py-2 w-8">
+                              <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} disabled={isViewer} aria-label={`Selecionar ${item.solicitacao.titulo}`} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed" />
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              <span
+                                draggable={!isViewer && !isEditing && !isConcluded}
+                                onDragStart={(event) => handleDragStart(event, item.id)}
+                                className={`inline-flex min-w-6 items-center gap-1 ${!isViewer && !isConcluded ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+                                title={!isViewer && !isConcluded ? 'Arraste para repriorizar' : undefined}
+                              >
+                                <span className="text-gray-400 dark:text-gray-500">::</span>
+                                <span>{isConcluded ? '—' : positionLabel(item.posicao ?? 0)}</span>
+                              </span>
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              {item.solicitacao?.zeevNumber ?? '—'}
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[140px] whitespace-nowrap">
+                              {isEditing ? (
+                                <select
+                                  value={editResponsavelId}
+                                  aria-label="Responsável"
+                                  onChange={(e) => setEditResponsavelId(e.target.value)}
+                                  className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
+                                >
+                                  <option value="">— Sem responsável —</option>
+                                  {funcionarios.filter((f) => f.ativo || f.id === editResponsavelId).map((f) => (
+                                    <option key={f.id} value={f.id}>{f.nome}{f.estagiario ? ' · Estagiário (6h/dia)' : ''}{!f.ativo ? ' · Inativo' : ''}{f.area ? ` (${f.area.nome})` : ''}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="truncate block" title={item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : undefined}>
+                                  {item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : '—'}
+                                </span>
+                              )}
+                            </td>
+                            <td
+                              className="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white max-w-[160px] truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                              onClick={() => router.push(`/backlog/${item.id}`)}
+                              title={item.solicitacao?.titulo}
                             >
-                              <option value="">— Sem responsável —</option>
-                              {funcionarios.filter((f) => f.ativo || f.id === editResponsavelId).map((f) => (
-                                <option key={f.id} value={f.id}>{f.nome}{f.estagiario ? ' · Estagiário (6h/dia)' : ''}{!f.ativo ? ' · Inativo' : ''}{f.area ? ` (${f.area.nome})` : ''}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className="truncate block" title={item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : undefined}>
-                              {item.responsaveis && item.responsaveis.length > 0 ? item.responsaveis.join(', ') : '—'}
-                            </span>
-                          )}
-                        </td>
-                        <td
-                          className="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white max-w-[160px] truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                          onClick={() => router.push(`/backlog/${item.id}`)}
-                          title={item.solicitacao?.titulo}
-                        >
-                          {item.solicitacao?.titulo ?? '—'}
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[100px] truncate whitespace-nowrap">
-                          {item.solicitacao?.solicitante ?? '—'}
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[90px] truncate whitespace-nowrap">
-                          {item.solicitacao?.areaSolicitante ?? '—'}
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-600 dark:text-gray-400 max-w-[90px] truncate whitespace-nowrap">
-                          {item.solicitacao?.area?.nome ?? '—'}
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {item.solicitacao?.esforcoTotal != null ? `${item.solicitacao.esforcoTotal}h` : '—'}
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          <div>
-                            <span>{GAIN_TYPE_LABELS[item.tipoGanho] ?? item.tipoGanho}</span>
-                            <span className="block text-xs text-gray-400 dark:text-gray-500">{GAIN_WEIGHT_LABELS[item.tipoGanho] ?? ''}</span>
-                          </div>
-                        </td>
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {item.valorGanho != null ? item.valorGanho.toLocaleString('pt-BR') : '—'}
-                        </td>
-                        <td className="px-2 py-2 whitespace-nowrap">
-                          <span className="text-sm font-bold text-gray-900 dark:text-white" title={`Ganho Norm.: ${item.ganhoNormalizado?.toFixed(2) ?? '—'} / Esforço: ${item.solicitacao?.esforcoTotal ?? '—'}h`}>
-                            {item.scorePriorizacao?.toFixed(2) ?? '—'}
-                          </span>
-                        </td>
+                              {item.solicitacao?.titulo ?? '—'}
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[100px] truncate whitespace-nowrap">
+                              {item.solicitacao?.solicitante ?? '—'}
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[90px] truncate whitespace-nowrap">
+                              {item.solicitacao?.areaSolicitante ?? '—'}
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-600 dark:text-gray-400 max-w-[90px] truncate whitespace-nowrap">
+                              {item.solicitacao?.area?.nome ?? '—'}
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              {item.solicitacao?.esforcoTotal != null ? `${item.solicitacao.esforcoTotal}h` : '—'}
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              <div>
+                                <span>{GAIN_TYPE_LABELS[item.tipoGanho] ?? item.tipoGanho}</span>
+                                <span className="block text-xs text-gray-400 dark:text-gray-500">{GAIN_WEIGHT_LABELS[item.tipoGanho] ?? ''}</span>
+                              </div>
+                            </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              {item.valorGanho != null ? item.valorGanho.toLocaleString('pt-BR') : '—'}
+                            </td>
+                            <td className="px-2 py-2 whitespace-nowrap">
+                              <span className="text-sm font-bold text-gray-900 dark:text-white" title={`Ganho Norm.: ${item.ganhoNormalizado?.toFixed(2) ?? '—'} / Esforço: ${item.solicitacao?.esforcoTotal ?? '—'}h`}>
+                                {item.scorePriorizacao?.toFixed(2) ?? '—'}
+                              </span>
+                            </td>
 
-                        {/* Status */}
-                        <td className="px-2 py-2 whitespace-nowrap">
-                          {isEditing ? (
-                            <select
-                              value={editStatus}
-                              onChange={(e) => setEditStatus(e.target.value)}
-                              className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            >
-                              {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                            </select>
-                          ) : (
-                            <StatusBadge status={item.status as Parameters<typeof StatusBadge>[0]['status']} />
-                          )}
-                        </td>
+                            {/* Status */}
+                            <td className="px-2 py-2 whitespace-nowrap">
+                              {isEditing ? (
+                                <select
+                                  value={editStatus}
+                                  onChange={(e) => setEditStatus(e.target.value)}
+                                  className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                  {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                </select>
+                              ) : (
+                                <StatusBadge status={item.status as Parameters<typeof StatusBadge>[0]['status']} />
+                              )}
+                            </td>
 
-                        {/* Data Início */}
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {isEditing ? (
-                            <input
-                              type="date"
-                              aria-label="Data de início"
-                              required={editStatus === 'EM_ANDAMENTO'}
-                              value={editDataInicio}
-                              onChange={(e) => setEditDataInicio(e.target.value)}
-                              className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          ) : (
-                            formatDateBR(item.dataInicio)
-                          )}
-                        </td>
+                            {/* Data Início */}
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              {isEditing ? (
+                                <input
+                                  type="date"
+                                  aria-label="Data de início"
+                                  required={editStatus === 'EM_ANDAMENTO'}
+                                  value={editDataInicio}
+                                  onChange={(e) => setEditDataInicio(e.target.value)}
+                                  className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                              ) : (
+                                formatDateBR(item.dataInicio)
+                              )}
+                            </td>
 
-                        {/* Previsão Conclusão */}
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {isEditing && editStatus === 'EM_ANDAMENTO' ? (
-                            <span className="text-teal-700 dark:text-teal-300" title="Calculada a partir do esforço e da capacidade do responsável, considerando demandas paralelas e férias.">Calculada ao salvar</span>
-                          ) : (
-                            formatDateBR(item.previsaoConclusao)
-                          )}
-                        </td>
+                            {/* Previsão Conclusão */}
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              {isEditing && editStatus === 'EM_ANDAMENTO' ? (
+                                <span className="text-teal-700 dark:text-teal-300" title="Calculada a partir do esforço e da capacidade do responsável, considerando demandas paralelas e férias.">Calculada ao salvar</span>
+                              ) : (
+                                formatDateBR(item.previsaoConclusao)
+                              )}
+                            </td>
 
-                        <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {formatDateBR(item.dataConclusao)}
-                        </td>
+                            <td className="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              {formatDateBR(item.dataConclusao)}
+                            </td>
 
-                        {/* Actions */}
-                        <td className="px-2 py-2 text-right whitespace-nowrap">
-                          {isEditing ? (
-                            <div className="inline-flex items-center gap-1.5">
-                              <ListActionButton
-                                action="save"
-                                label={`Salvar ${item.solicitacao.titulo}`}
-                                onClick={() => saveEditing(item.id)}
-                                busy={saving}
-                              />
-                              <ListActionButton
-                                action="cancel"
-                                label={`Cancelar edição de ${item.solicitacao.titulo}`}
-                                onClick={cancelEditing}
-                              />
-                            </div>
-                          ) : (
-                            <div className="inline-flex items-center gap-1.5">
-                              <ListActionButton
-                                action="edit"
-                                label={`Editar ${item.solicitacao.titulo}`}
-                                onClick={(e) => { e.stopPropagation(); startEditing(item) }}
-                                disabled={isViewer}
-                              />
-                              <ListActionButton
-                                action="view"
-                                label={`Ver detalhes de ${item.solicitacao.titulo}`}
-                                onClick={() => router.push(`/backlog/${item.id}`)}
-                              />
-                            </div>
-                          )}
-                        </td>
-                        </tr>
-                      </Fragment>
-                    )
-                  })}
-                </tbody>
+                            {/* Actions */}
+                            <td className="px-2 py-2 text-right whitespace-nowrap">
+                              {isEditing ? (
+                                <div className="inline-flex items-center gap-1.5">
+                                  <ListActionButton
+                                    action="save"
+                                    label={`Salvar ${item.solicitacao.titulo}`}
+                                    onClick={() => saveEditing(item.id)}
+                                    busy={saving}
+                                  />
+                                  <ListActionButton
+                                    action="cancel"
+                                    label={`Cancelar edição de ${item.solicitacao.titulo}`}
+                                    onClick={cancelEditing}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="inline-flex items-center gap-1.5">
+                                  <ListActionButton
+                                    action="edit"
+                                    label={`Editar ${item.solicitacao.titulo}`}
+                                    onClick={(e) => { e.stopPropagation(); startEditing(item) }}
+                                    disabled={isViewer}
+                                  />
+                                  <ListActionButton
+                                    action="view"
+                                    label={`Ver detalhes de ${item.solicitacao.titulo}`}
+                                    onClick={() => router.push(`/backlog/${item.id}`)}
+                                  />
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </Fragment>
+                ))}
               </table>
             </div>
           </>
@@ -927,18 +955,41 @@ export default function BacklogPage() {
             <div className="px-6 py-5">
               <h2 className="text-base font-semibold text-gray-900 dark:text-white">Confirmar exclusão em lote</h2>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Tem certeza que deseja remover {selected.size} {selected.size === 1 ? 'item' : 'itens'} do backlog?
+                Tem certeza que deseja remover {selectedVisibleIds.length} {selectedVisibleIds.length === 1 ? 'item' : 'itens'} do backlog?
               </p>
             </div>
             <div className="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
               <button onClick={() => setShowBatchDelete(false)} disabled={batchDeleting} className="rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
-              <button onClick={handleBatchDelete} disabled={batchDeleting} className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
-                {batchDeleting ? 'Removendo...' : `Remover ${selected.size}`}
+              <button onClick={handleBatchDelete} disabled={batchDeleting || selectedVisibleIds.length === 0} className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                {batchDeleting ? 'Removendo...' : `Remover ${selectedVisibleIds.length}`}
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
+  )
+}
+
+function ConcludedSectionToggle({ count, expanded, controls, onToggle }: {
+  count: number
+  expanded: boolean
+  controls: string
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      aria-controls={controls}
+      onClick={onToggle}
+      className="flex min-h-12 w-full items-center gap-2 bg-gray-50 px-4 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500 dark:bg-gray-700/50 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus-visible:ring-gray-400"
+    >
+      <svg className={`h-4 w-4 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" />
+      </svg>
+      <span>Concluídas / Canceladas</span>
+      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-600 dark:text-gray-200">{count}</span>
+    </button>
   )
 }
