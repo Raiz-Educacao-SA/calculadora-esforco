@@ -133,3 +133,8 @@ simuladas confirmou dicas curtas por hover/foco nos cadastros e fornecedores,
 incluindo ativação/desativação, salvar/cancelar inline e o link de contratos,
 em desktop/celular. Escape continua fechando as dicas e os nomes acessíveis
 foram preservados; nenhum erro de execução ou alteração de dados nos testes.
+
+Publicado no commit `c30595e`, deployment `dpl_Bd6LZza2vwBRHDvSS3j33VhgZj88`,
+em **16/09/2026 às 11:58**, horário de São Paulo. Build de produção aprovado,
+sem migrations pendentes. O endereço principal foi direcionado à versão e
+confirmado com status Ready; `/login` respondeu HTTP 200.
