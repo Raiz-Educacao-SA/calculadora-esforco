@@ -1,5 +1,6 @@
 'use client'
 
+import { ListActionButton } from '@/components/ui/ListActionButton'
 import { useState, useEffect, useCallback } from 'react'
 
 interface Area {
@@ -249,10 +250,10 @@ export default function FuncionariosPage() {
                     </span>
                   </div>
                   {isAdmin && (
-                    <div className="flex gap-2">
-                      <button onClick={() => openEdit(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                      <button onClick={() => handleToggleAtivo(f)} className={`flex-1 rounded py-1.5 text-sm font-medium border ${f.ativo ? 'text-yellow-600 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/30' : 'text-green-600 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30'}`}>{f.ativo ? 'Desativar' : 'Ativar'}</button>
-                      <button onClick={() => setDeleteConfirm(f.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                    <div className="flex items-center justify-end gap-2 sm:gap-1.5">
+                      <ListActionButton action="edit" label={`Editar colaborador ${f.nome}`} onClick={() => openEdit(f)} />
+                      <ListActionButton action={f.ativo ? 'deactivate' : 'activate'} label={`${f.ativo ? 'Desativar' : 'Ativar'} colaborador ${f.nome}`} onClick={() => handleToggleAtivo(f)} />
+                      <ListActionButton action="delete" label={`Excluir colaborador ${f.nome}`} onClick={() => setDeleteConfirm(f.id)} />
                     </div>
                   )}
                 </li>
@@ -285,10 +286,10 @@ export default function FuncionariosPage() {
                     </td>
                     {isAdmin && (
                       <td className="px-4 py-3 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button onClick={() => openEdit(f)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                          <button onClick={() => handleToggleAtivo(f)} className={`rounded px-2 py-1 text-xs font-medium ${f.ativo ? 'text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30' : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'}`}>{f.ativo ? 'Desativar' : 'Ativar'}</button>
-                          <button onClick={() => setDeleteConfirm(f.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                        <div className="inline-flex items-center justify-end gap-2 sm:gap-1.5">
+                          <ListActionButton action="edit" label={`Editar colaborador ${f.nome}`} onClick={() => openEdit(f)} />
+                          <ListActionButton action={f.ativo ? 'deactivate' : 'activate'} label={`${f.ativo ? 'Desativar' : 'Ativar'} colaborador ${f.nome}`} onClick={() => handleToggleAtivo(f)} />
+                          <ListActionButton action="delete" label={`Excluir colaborador ${f.nome}`} onClick={() => setDeleteConfirm(f.id)} />
                         </div>
                       </td>
                     )}

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Fragment, type DragEvent } from 'reac
 import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { ListActionButton } from '@/components/ui/ListActionButton'
 
 interface Area {
   id: string
@@ -627,15 +628,15 @@ export default function BacklogPage() {
                           </div>
                         </div>
                         {editStatus === 'EM_ANDAMENTO' && <p className="text-xs text-gray-500 dark:text-gray-400">Informe o início e o responsável. A previsão considera o esforço, a jornada, as demandas paralelas e as férias.</p>}
-                        <div className="flex gap-2">
-                          <button onClick={() => saveEditing(item.id)} disabled={saving} className="flex-1 rounded py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50">{saving ? '...' : 'Salvar'}</button>
-                          <button onClick={cancelEditing} className="flex-1 rounded py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+                        <div className="flex items-center justify-end gap-2">
+                          <ListActionButton action="save" label={`Salvar ${item.solicitacao.titulo}`} onClick={() => saveEditing(item.id)} busy={saving} />
+                          <ListActionButton action="cancel" label={`Cancelar edição de ${item.solicitacao.titulo}`} onClick={cancelEditing} />
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); startEditing(item) }} disabled={isViewer} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed">Editar</button>
-                        <button onClick={() => router.push(`/backlog/${item.id}`)} className="flex-1 rounded py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">Detalhes</button>
+                      <div className="flex items-center justify-end gap-2">
+                        <ListActionButton action="edit" label={`Editar ${item.solicitacao.titulo}`} onClick={(e) => { e.stopPropagation(); startEditing(item) }} disabled={isViewer} />
+                        <ListActionButton action="view" label={`Ver detalhes de ${item.solicitacao.titulo}`} onClick={() => router.push(`/backlog/${item.id}`)} />
                       </div>
                     )}
                     </li>
@@ -808,36 +809,32 @@ export default function BacklogPage() {
                         {/* Actions */}
                         <td className="px-2 py-2 text-right whitespace-nowrap">
                           {isEditing ? (
-                            <div className="inline-flex items-center gap-1">
-                              <button
+                            <div className="inline-flex items-center gap-1.5">
+                              <ListActionButton
+                                action="save"
+                                label={`Salvar ${item.solicitacao.titulo}`}
                                 onClick={() => saveEditing(item.id)}
-                                disabled={saving}
-                                className="rounded px-2 py-1 text-xs font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 disabled:opacity-50"
-                              >
-                                {saving ? '...' : 'Salvar'}
-                              </button>
-                              <button
+                                busy={saving}
+                              />
+                              <ListActionButton
+                                action="cancel"
+                                label={`Cancelar edição de ${item.solicitacao.titulo}`}
                                 onClick={cancelEditing}
-                                className="rounded px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              >
-                                Cancelar
-                              </button>
+                              />
                             </div>
                           ) : (
-                            <div className="inline-flex items-center gap-1">
-                              <button
+                            <div className="inline-flex items-center gap-1.5">
+                              <ListActionButton
+                                action="edit"
+                                label={`Editar ${item.solicitacao.titulo}`}
                                 onClick={(e) => { e.stopPropagation(); startEditing(item) }}
                                 disabled={isViewer}
-                                className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Editar
-                              </button>
-                              <button
+                              />
+                              <ListActionButton
+                                action="view"
+                                label={`Ver detalhes de ${item.solicitacao.titulo}`}
                                 onClick={() => router.push(`/backlog/${item.id}`)}
-                                className="rounded px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              >
-                                Detalhes
-                              </button>
+                              />
                             </div>
                           )}
                         </td>

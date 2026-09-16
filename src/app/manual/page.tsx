@@ -30,7 +30,7 @@ export default function ManualPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Guia completo de uso do sistema de gestão de esforço e backlog
             </p>
-            <p className="text-xs text-teal-700 dark:text-teal-300 mt-2">Atualizado em 16/09/2026 · Capacidade, estagiários, previsão automática e conclusão</p>
+            <p className="text-xs text-teal-700 dark:text-teal-300 mt-2">Atualizado em 16/09/2026 · Ações por ícones, capacidade, estagiários e previsão automática</p>
           </div>
           <button
             type="button"
@@ -48,6 +48,7 @@ export default function ManualPage() {
         <nav aria-label="Índice do manual" className="no-print rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 p-4">
           <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Acesso rápido</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-teal-800 dark:text-teal-200">
+            <a className="underline" href="#manual-acoes">Ícones de ações</a>
             <a className="underline" href="#manual-backlog">Backlog e prioridades</a>
             <a className="underline" href="#manual-capacidade">Jornada e percentual</a>
             <a className="underline" href="#manual-estagiarios">Cadastro de estagiários</a>
@@ -84,6 +85,27 @@ export default function ManualPage() {
               </a>
             </span>
           </div>
+        </section>
+
+        <section id="manual-acoes" className="manual-section scroll-mt-20 lg:scroll-mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Como usar os ícones de ações</h2>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+            As ações de cada registro aparecem como botões com ícones, à direita das listas ou na parte inferior dos cartões no celular.
+            Passe o mouse ou use <strong>Tab</strong> para mostrar a descrição da ação e o nome do registro.
+            Use <strong>Enter</strong> para acionar o controle e <strong>Esc</strong> para fechar a dica.
+          </p>
+          <ul className="space-y-2">
+            <BulletItem><strong>Lápis:</strong> editar o registro.</BulletItem>
+            <BulletItem><strong>Olho:</strong> consultar os detalhes. <strong>Documentos:</strong> abrir os contratos do fornecedor. <strong>Seta para fora:</strong> abrir um anexo em nova aba.</BulletItem>
+            <BulletItem><strong>Triângulo verde:</strong> ativar. <strong>Pausa âmbar:</strong> desativar.</BulletItem>
+            <BulletItem><strong>Lixeira vermelha:</strong> excluir ou remover o item; observe a confirmação apresentada pelo sistema.</BulletItem>
+            <BulletItem><strong>Marca de verificação:</strong> salvar a edição na própria lista. <strong>X:</strong> cancelar essa edição.</BulletItem>
+            <BulletItem><strong>Marca de verificação dentro de um círculo:</strong> marcar um pagamento como pago. <strong>Calendário:</strong> consultar as férias na timeline.</BulletItem>
+            <BulletItem>Durante o processamento, o ícone pode mostrar um indicador de carregamento. Botões esmaecidos estão indisponíveis naquele momento ou para o seu perfil.</BulletItem>
+          </ul>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+            No celular, toque diretamente no ícone desejado. Os botões de criação, ações em lote e confirmações de formulários continuam identificados por texto.
+          </p>
         </section>
 
         {/* Seção 2 — Acesso e Perfis */}

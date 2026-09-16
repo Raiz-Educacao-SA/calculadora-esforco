@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { ListActionButton } from '@/components/ui/ListActionButton'
 
 interface Area {
   id: string
@@ -315,10 +316,10 @@ export default function ComponentesPage() {
                     <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300">{comp.area.nome}</span>
                     {comp.descricao && <p className="text-xs text-gray-500 dark:text-gray-400">{comp.descricao}</p>}
                   </div>
-                  <div className="flex gap-2 pl-6">
-                    <button onClick={() => openEdit(comp)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                    <button onClick={() => handleToggleAtivo(comp)} className={`flex-1 rounded py-1.5 text-sm font-medium border ${comp.ativo ? 'text-yellow-600 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/30' : 'text-green-600 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30'}`}>{comp.ativo ? 'Desativar' : 'Ativar'}</button>
-                    <button onClick={() => setDeleteConfirm(comp.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                  <div className="flex items-center justify-end gap-2">
+                    <ListActionButton action="edit" label={`Editar ${comp.nome}`} onClick={() => openEdit(comp)} />
+                    <ListActionButton action={comp.ativo ? 'deactivate' : 'activate'} label={`${comp.ativo ? 'Desativar' : 'Ativar'} ${comp.nome}`} onClick={() => handleToggleAtivo(comp)} />
+                    <ListActionButton action="delete" label={`Excluir ${comp.nome}`} onClick={() => setDeleteConfirm(comp.id)} />
                   </div>
                 </li>
               ))}
@@ -355,10 +356,10 @@ export default function ComponentesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button onClick={() => openEdit(comp)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                        <button onClick={() => handleToggleAtivo(comp)} className={`rounded px-2 py-1 text-xs font-medium ${comp.ativo ? 'text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30' : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'}`}>{comp.ativo ? 'Desativar' : 'Ativar'}</button>
-                        <button onClick={() => setDeleteConfirm(comp.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                      <div className="inline-flex items-center gap-1.5">
+                        <ListActionButton action="edit" label={`Editar ${comp.nome}`} onClick={() => openEdit(comp)} />
+                        <ListActionButton action={comp.ativo ? 'deactivate' : 'activate'} label={`${comp.ativo ? 'Desativar' : 'Ativar'} ${comp.nome}`} onClick={() => handleToggleAtivo(comp)} />
+                        <ListActionButton action="delete" label={`Excluir ${comp.nome}`} onClick={() => setDeleteConfirm(comp.id)} />
                       </div>
                     </td>
                   </tr>

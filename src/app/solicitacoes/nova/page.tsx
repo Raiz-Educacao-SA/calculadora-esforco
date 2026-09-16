@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { SourceBadge } from '@/components/ui/SourceBadge'
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge'
+import { ListActionButton } from '@/components/ui/ListActionButton'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -965,23 +966,12 @@ export default function NovaSolicitacaoPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
+                      <ListActionButton
+                        action="delete"
+                        label={`Remover ${row.criterioNome}`}
                         onClick={() => handleRemoveCriterio(row.criterioId)}
-                        disabled={loadingAction === `remove-${row.criterioId}`}
-                        aria-label={`Remover ${row.criterioNome}`}
-                        className="inline-flex items-center justify-center rounded p-1.5 text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 focus:outline-none focus:ring-1 focus:ring-red-300 disabled:opacity-40"
-                      >
-                        {loadingAction === `remove-${row.criterioId}` ? (
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        )}
-                      </button>
+                        busy={loadingAction === `remove-${row.criterioId}`}
+                      />
                     </td>
                   </tr>
                 ))}

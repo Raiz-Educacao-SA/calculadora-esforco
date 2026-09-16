@@ -1,5 +1,6 @@
 'use client'
 
+import { ListActionButton } from '@/components/ui/ListActionButton'
 import { useState, useEffect, useCallback } from 'react'
 
 interface Area {
@@ -452,12 +453,12 @@ export default function FeriasPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => goToTimeline(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-teal-600 border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/30">Ver na timeline</button>
+                    <div className="flex items-center justify-end gap-2 sm:gap-1.5">
+                      <ListActionButton action="calendar" label={`Ver férias de ${f.funcionario.nome} (${formatDate(f.dataInicio)} a ${formatDate(f.dataFim)}) na timeline`} onClick={() => goToTimeline(f)} />
                       {canEditFerias(f) && (
                         <>
-                          <button onClick={() => openEdit(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                          <button onClick={() => setDeleteConfirm(f.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                          <ListActionButton action="edit" label={`Editar férias de ${f.funcionario.nome} (${formatDate(f.dataInicio)} a ${formatDate(f.dataFim)})`} onClick={() => openEdit(f)} />
+                          <ListActionButton action="delete" label={`Excluir férias de ${f.funcionario.nome} (${formatDate(f.dataInicio)} a ${formatDate(f.dataFim)})`} onClick={() => setDeleteConfirm(f.id)} />
                         </>
                       )}
                     </div>
@@ -492,12 +493,12 @@ export default function FeriasPage() {
                         {f.observacao ?? '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button onClick={() => goToTimeline(f)} className="rounded px-2 py-1 text-xs font-medium text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30">Ver na timeline</button>
+                        <div className="inline-flex items-center justify-end gap-2 sm:gap-1.5">
+                          <ListActionButton action="calendar" label={`Ver férias de ${f.funcionario.nome} (${formatDate(f.dataInicio)} a ${formatDate(f.dataFim)}) na timeline`} onClick={() => goToTimeline(f)} />
                           {canEditFerias(f) && (
                             <>
-                              <button onClick={() => openEdit(f)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                              <button onClick={() => setDeleteConfirm(f.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                              <ListActionButton action="edit" label={`Editar férias de ${f.funcionario.nome} (${formatDate(f.dataInicio)} a ${formatDate(f.dataFim)})`} onClick={() => openEdit(f)} />
+                              <ListActionButton action="delete" label={`Excluir férias de ${f.funcionario.nome} (${formatDate(f.dataInicio)} a ${formatDate(f.dataFim)})`} onClick={() => setDeleteConfirm(f.id)} />
                             </>
                           )}
                         </div>

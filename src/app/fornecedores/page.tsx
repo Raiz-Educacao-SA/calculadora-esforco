@@ -1,7 +1,7 @@
 'use client'
 
+import { ListActionButton, ListActionLink } from '@/components/ui/ListActionButton'
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface Fornecedor {
@@ -356,17 +356,15 @@ export default function FornecedoresPage() {
                             <option value="false">Inativo</option>
                           </select>
                         </div>
-                        <div className="flex gap-2">
-                          <button onClick={handleSave} disabled={saving} className="flex-1 rounded py-1.5 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50">{saving ? '...' : 'Salvar'}</button>
-                          <button onClick={cancelEditing} className="flex-1 rounded py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+                        <div className="flex items-center justify-end gap-2 sm:gap-1.5">
+                          <ListActionButton action="save" label={`Salvar fornecedor ${f.nome}`} onClick={handleSave} busy={saving} disabled={saving} />
+                          <ListActionButton action="cancel" label={`Cancelar edição do fornecedor ${f.nome}`} onClick={cancelEditing} />
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
-                        <button onClick={() => startEditing(f)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                        <Link href={`/contratos?fornecedorId=${f.id}`} className="flex-1 rounded py-1.5 text-sm font-medium text-center text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                          Ver Contratos
-                        </Link>
+                      <div className="flex items-center justify-end gap-2 sm:gap-1.5">
+                        <ListActionButton action="edit" label={`Editar fornecedor ${f.nome}`} onClick={() => startEditing(f)} />
+                        <ListActionLink action="documents" label={`Ver contratos de ${f.nome}`} href={`/contratos?fornecedorId=${f.id}`} />
                       </div>
                     )}
                   </li>
@@ -451,22 +449,14 @@ export default function FornecedoresPage() {
                         </td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">
                           {isEditing ? (
-                            <div className="inline-flex items-center gap-1">
-                              <button onClick={handleSave} disabled={saving} className="rounded px-2 py-1 text-xs font-medium text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 disabled:opacity-50">
-                                {saving ? '...' : 'Salvar'}
-                              </button>
-                              <button onClick={cancelEditing} className="rounded px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                Cancelar
-                              </button>
+                            <div className="inline-flex items-center justify-end gap-2 sm:gap-1.5">
+                              <ListActionButton action="save" label={`Salvar fornecedor ${f.nome}`} onClick={handleSave} busy={saving} disabled={saving} />
+                              <ListActionButton action="cancel" label={`Cancelar edição do fornecedor ${f.nome}`} onClick={cancelEditing} />
                             </div>
                           ) : (
-                            <div className="inline-flex items-center gap-1">
-                              <button onClick={() => startEditing(f)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                                Editar
-                              </button>
-                              <Link href={`/contratos?fornecedorId=${f.id}`} className="rounded px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                Ver Contratos
-                              </Link>
+                            <div className="inline-flex items-center justify-end gap-2 sm:gap-1.5">
+                              <ListActionButton action="edit" label={`Editar fornecedor ${f.nome}`} onClick={() => startEditing(f)} />
+                              <ListActionLink action="documents" label={`Ver contratos de ${f.nome}`} href={`/contratos?fornecedorId=${f.id}`} />
                             </div>
                           )}
                         </td>

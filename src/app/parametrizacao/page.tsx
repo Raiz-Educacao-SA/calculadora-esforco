@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { ListActionButton } from '@/components/ui/ListActionButton'
 
 interface Area { id: string; nome: string }
 interface Componente { id: string; nome: string; areaId: string }
@@ -775,21 +776,17 @@ export default function ParametrizacaoPage() {
                               )}
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
+                              <div className="flex items-center justify-center gap-1.5">
+                                <ListActionButton
+                                  action="edit"
+                                  label={`Editar ${row.criterioNome}, complexidade ${row.complexidadeNome}`}
                                   onClick={() => handleEditRow(row)}
-                                  className="rounded p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:text-teal-400 dark:hover:bg-teal-900/30"
-                                  title="Editar"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                </button>
-                                <button
+                                />
+                                <ListActionButton
+                                  action="delete"
+                                  label={`Excluir ${row.criterioNome}, complexidade ${row.complexidadeNome}`}
                                   onClick={() => setDeleteRow(row)}
-                                  className="rounded p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30"
-                                  title="Excluir"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
+                                />
                               </div>
                             </td>
                           </tr>

@@ -1,5 +1,6 @@
 'use client'
 
+import { ListActionButton } from '@/components/ui/ListActionButton'
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -501,20 +502,18 @@ function PagamentosPageInner() {
                             <input type="date" value={toInputDate(editData.dataPagamento)} onChange={(e) => setEditData({ ...editData, dataPagamento: e.target.value || null })} className={inlineInputClass} />
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button onClick={handleSave} disabled={saving} className="flex-1 rounded py-1.5 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50">{saving ? '...' : 'Salvar'}</button>
-                          <button onClick={cancelEditing} className="flex-1 rounded py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+                        <div className="flex items-center justify-end gap-2 sm:gap-1.5">
+                          <ListActionButton action="save" label={`Salvar pagamento ${p.descricao}`} onClick={handleSave} busy={saving} disabled={saving} />
+                          <ListActionButton action="cancel" label={`Cancelar edição do pagamento ${p.descricao}`} onClick={cancelEditing} />
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-2 flex-wrap">
-                        <button onClick={() => startEditing(p)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
+                      <div className="flex items-center justify-end gap-2 sm:gap-1.5">
+                        <ListActionButton action="edit" label={`Editar pagamento ${p.descricao}`} onClick={() => startEditing(p)} />
                         {p.status !== 'PAGO' && p.status !== 'CANCELADO' && (
-                          <button onClick={() => handleMarkPago(p.id)} disabled={markingPagoId === p.id} className="flex-1 rounded py-1.5 text-sm font-medium text-green-600 border border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30 disabled:opacity-50">
-                            {markingPagoId === p.id ? '...' : 'Marcar Pago'}
-                          </button>
+                          <ListActionButton action="complete" label={`Marcar como pago: ${p.descricao}`} onClick={() => handleMarkPago(p.id)} busy={markingPagoId === p.id} disabled={markingPagoId === p.id} />
                         )}
-                        <button onClick={() => setDeleteConfirm(p.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                        <ListActionButton action="delete" label={`Excluir pagamento ${p.descricao}`} onClick={() => setDeleteConfirm(p.id)} />
                       </div>
                     )}
                   </li>
@@ -588,27 +587,17 @@ function PagamentosPageInner() {
                         </td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">
                           {isEditing ? (
-                            <div className="inline-flex items-center gap-1">
-                              <button onClick={handleSave} disabled={saving} className="rounded px-2 py-1 text-xs font-medium text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 disabled:opacity-50">
-                                {saving ? '...' : 'Salvar'}
-                              </button>
-                              <button onClick={cancelEditing} className="rounded px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                Cancelar
-                              </button>
+                            <div className="inline-flex items-center justify-end gap-2 sm:gap-1.5">
+                              <ListActionButton action="save" label={`Salvar pagamento ${p.descricao}`} onClick={handleSave} busy={saving} disabled={saving} />
+                              <ListActionButton action="cancel" label={`Cancelar edição do pagamento ${p.descricao}`} onClick={cancelEditing} />
                             </div>
                           ) : (
-                            <div className="inline-flex items-center gap-1">
-                              <button onClick={() => startEditing(p)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                                Editar
-                              </button>
+                            <div className="inline-flex items-center justify-end gap-2 sm:gap-1.5">
+                              <ListActionButton action="edit" label={`Editar pagamento ${p.descricao}`} onClick={() => startEditing(p)} />
                               {p.status !== 'PAGO' && p.status !== 'CANCELADO' && (
-                                <button onClick={() => handleMarkPago(p.id)} disabled={markingPagoId === p.id} className="rounded px-2 py-1 text-xs font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 disabled:opacity-50">
-                                  {markingPagoId === p.id ? '...' : 'Marcar Pago'}
-                                </button>
+                                <ListActionButton action="complete" label={`Marcar como pago: ${p.descricao}`} onClick={() => handleMarkPago(p.id)} busy={markingPagoId === p.id} disabled={markingPagoId === p.id} />
                               )}
-                              <button onClick={() => setDeleteConfirm(p.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">
-                                Excluir
-                              </button>
+                              <ListActionButton action="delete" label={`Excluir pagamento ${p.descricao}`} onClick={() => setDeleteConfirm(p.id)} />
                             </div>
                           )}
                         </td>

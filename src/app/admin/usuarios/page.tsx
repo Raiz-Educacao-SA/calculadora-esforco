@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { ListActionButton } from '@/components/ui/ListActionButton'
 
 type Role = 'ADMIN' | 'OPERATOR' | 'VIEWER'
 
@@ -300,10 +301,10 @@ export default function UsuariosPage() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-400 dark:text-gray-500">Criado em {formatDate(u.createdAt)}</p>
-                  <div className="flex gap-2">
-                    <button onClick={() => openEdit(u)} className="flex-1 rounded py-1.5 text-sm font-medium text-teal-600 border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/20">Editar</button>
-                    <button onClick={() => handleToggleAtivo(u)} className={`flex-1 rounded py-1.5 text-sm font-medium border ${u.ativo ? 'text-yellow-600 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/20' : 'text-green-600 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20'}`}>{u.ativo ? 'Desativar' : 'Ativar'}</button>
-                    <button onClick={() => setDeleteItem(u)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20">Excluir</button>
+                  <div className="flex items-center justify-end gap-2">
+                    <ListActionButton action="edit" label={`Editar ${u.nome}`} onClick={() => openEdit(u)} />
+                    <ListActionButton action={u.ativo ? 'deactivate' : 'activate'} label={`${u.ativo ? 'Desativar' : 'Ativar'} ${u.nome}`} onClick={() => handleToggleAtivo(u)} />
+                    <ListActionButton action="delete" label={`Excluir ${u.nome}`} onClick={() => setDeleteItem(u)} />
                   </div>
                 </li>
               ))}
@@ -342,10 +343,10 @@ export default function UsuariosPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{formatDate(u.createdAt)}</td>
                     <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button onClick={() => openEdit(u)} className="rounded px-2 py-1 text-xs font-medium text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20">Editar</button>
-                        <button onClick={() => handleToggleAtivo(u)} className={`rounded px-2 py-1 text-xs font-medium ${u.ativo ? 'text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20' : 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'}`}>{u.ativo ? 'Desativar' : 'Ativar'}</button>
-                        <button onClick={() => setDeleteItem(u)} className="rounded px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">Excluir</button>
+                      <div className="inline-flex items-center gap-1.5">
+                        <ListActionButton action="edit" label={`Editar ${u.nome}`} onClick={() => openEdit(u)} />
+                        <ListActionButton action={u.ativo ? 'deactivate' : 'activate'} label={`${u.ativo ? 'Desativar' : 'Ativar'} ${u.nome}`} onClick={() => handleToggleAtivo(u)} />
+                        <ListActionButton action="delete" label={`Excluir ${u.nome}`} onClick={() => setDeleteItem(u)} />
                       </div>
                     </td>
                   </tr>

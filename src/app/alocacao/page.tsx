@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getAreaColor, getAreaColorHex, getAreaTextColor } from '@/lib/alocacao-colors'
 import { dailyProjectCapacity, HORAS_DIARIAS_ESTAGIARIO } from '@/lib/services/capacity'
+import { ListActionButton } from '@/components/ui/ListActionButton'
 
 interface Funcionario {
   id: string
@@ -683,12 +684,11 @@ export default function AlocacaoPage() {
                             )}
                           </div>
                           {isAdmin && (
-                            <button
+                            <ListActionButton
+                              action="edit"
+                              label={`Editar ${a.titulo}`}
                               onClick={() => openEdit(a)}
-                              className="shrink-0 text-xs text-blue-600 hover:underline"
-                            >
-                              Editar
-                            </button>
+                            />
                           )}
                         </li>
                       )

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ListActionButton, ListActionLink } from '@/components/ui/ListActionButton'
 
 interface Fornecedor {
   id: string
@@ -374,11 +375,6 @@ export default function ContratoDetailPage() {
                     <span className="text-sm font-medium text-gray-900 dark:text-white">{doc.nome}</span>
                     <TipoBadge tipo={doc.tipo} />
                   </div>
-                  {doc.url && (
-                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline truncate block">
-                      Abrir anexo
-                    </a>
-                  )}
                   {doc.observacao && (
                     <p className="text-xs text-gray-500 dark:text-gray-400">{doc.observacao}</p>
                   )}
@@ -386,13 +382,24 @@ export default function ContratoDetailPage() {
                     {new Date(doc.createdAt).toLocaleString('pt-BR')}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleDeleteDoc(doc.id)}
-                  disabled={deletingDocId === doc.id}
-                  className="shrink-0 rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50"
-                >
-                  {deletingDocId === doc.id ? '...' : 'Excluir'}
-                </button>
+                <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-1.5">
+                  {doc.url && (
+                    <ListActionLink
+                      action="open"
+                      label={`Abrir anexo ${doc.nome} em nova aba`}
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    />
+                  )}
+                  <ListActionButton
+                    action="delete"
+                    label={`Excluir anexo ${doc.nome}`}
+                    onClick={() => handleDeleteDoc(doc.id)}
+                    busy={deletingDocId === doc.id}
+                    disabled={deletingDocId === doc.id}
+                  />
+                </div>
               </li>
             ))}
           </ul>

@@ -1,7 +1,8 @@
 'use client'
 
+import { ListActionButton, ListActionLink } from '@/components/ui/ListActionButton'
 import { useState, useEffect, useCallback, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface Contrato {
@@ -87,7 +88,6 @@ const EMPTY_FORM = {
 }
 
 function ContratosPageInner() {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   const [contratos, setContratos] = useState<Contrato[]>([])
@@ -431,16 +431,16 @@ function ContratosPageInner() {
                             </select>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button onClick={handleSave} disabled={saving} className="flex-1 rounded py-1.5 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50">{saving ? '...' : 'Salvar'}</button>
-                          <button onClick={cancelEditing} className="flex-1 rounded py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+                        <div className="flex items-center justify-end gap-2 sm:gap-1.5">
+                          <ListActionButton action="save" label={`Salvar contrato ${c.titulo}`} onClick={handleSave} busy={saving} disabled={saving} />
+                          <ListActionButton action="cancel" label={`Cancelar edição do contrato ${c.titulo}`} onClick={cancelEditing} />
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
-                        <button onClick={() => startEditing(c)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                        <button onClick={() => router.push(`/contratos/${c.id}`)} className="flex-1 rounded py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">Detalhes</button>
-                        <button onClick={() => setDeleteConfirm(c.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                      <div className="flex items-center justify-end gap-2 sm:gap-1.5">
+                        <ListActionButton action="edit" label={`Editar contrato ${c.titulo}`} onClick={() => startEditing(c)} />
+                        <ListActionLink action="view" label={`Ver detalhes do contrato ${c.titulo}`} href={`/contratos/${c.id}`} />
+                        <ListActionButton action="delete" label={`Excluir contrato ${c.titulo}`} onClick={() => setDeleteConfirm(c.id)} />
                       </div>
                     )}
                   </li>
@@ -529,25 +529,15 @@ function ContratosPageInner() {
                         </td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">
                           {isEditing ? (
-                            <div className="inline-flex items-center gap-1">
-                              <button onClick={handleSave} disabled={saving} className="rounded px-2 py-1 text-xs font-medium text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 disabled:opacity-50">
-                                {saving ? '...' : 'Salvar'}
-                              </button>
-                              <button onClick={cancelEditing} className="rounded px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                Cancelar
-                              </button>
+                            <div className="inline-flex items-center justify-end gap-2 sm:gap-1.5">
+                              <ListActionButton action="save" label={`Salvar contrato ${c.titulo}`} onClick={handleSave} busy={saving} disabled={saving} />
+                              <ListActionButton action="cancel" label={`Cancelar edição do contrato ${c.titulo}`} onClick={cancelEditing} />
                             </div>
                           ) : (
-                            <div className="inline-flex items-center gap-1">
-                              <button onClick={() => startEditing(c)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                                Editar
-                              </button>
-                              <button onClick={() => router.push(`/contratos/${c.id}`)} className="rounded px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                Detalhes
-                              </button>
-                              <button onClick={() => setDeleteConfirm(c.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">
-                                Excluir
-                              </button>
+                            <div className="inline-flex items-center justify-end gap-2 sm:gap-1.5">
+                              <ListActionButton action="edit" label={`Editar contrato ${c.titulo}`} onClick={() => startEditing(c)} />
+                              <ListActionLink action="view" label={`Ver detalhes do contrato ${c.titulo}`} href={`/contratos/${c.id}`} />
+                              <ListActionButton action="delete" label={`Excluir contrato ${c.titulo}`} onClick={() => setDeleteConfirm(c.id)} />
                             </div>
                           )}
                         </td>

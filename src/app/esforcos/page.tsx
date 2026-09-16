@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { ListActionButton } from '@/components/ui/ListActionButton'
 
 interface Area {
   id: string
@@ -364,10 +365,10 @@ export default function EsforcosPage() {
                       {item.ativo ? 'Ativo' : 'Inativo'}
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => openEdit(item)} className="flex-1 rounded py-1.5 text-sm font-medium text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                    <button onClick={() => handleToggleAtivo(item)} className={`flex-1 rounded py-1.5 text-sm font-medium border ${item.ativo ? 'text-yellow-600 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/30' : 'text-green-600 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30'}`}>{item.ativo ? 'Desativar' : 'Ativar'}</button>
-                    <button onClick={() => setDeleteConfirm(item.id)} className="flex-1 rounded py-1.5 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                  <div className="flex items-center justify-end gap-2">
+                    <ListActionButton action="edit" label={`Editar esforço de ${item.criterio.nome} / ${item.complexidade.nome}`} onClick={() => openEdit(item)} />
+                    <ListActionButton action={item.ativo ? 'deactivate' : 'activate'} label={`${item.ativo ? 'Desativar' : 'Ativar'} esforço de ${item.criterio.nome} / ${item.complexidade.nome}`} onClick={() => handleToggleAtivo(item)} />
+                    <ListActionButton action="delete" label={`Excluir esforço de ${item.criterio.nome} / ${item.complexidade.nome}`} onClick={() => setDeleteConfirm(item.id)} />
                   </div>
                 </li>
               ))}
@@ -401,10 +402,10 @@ export default function EsforcosPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button onClick={() => openEdit(item)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30">Editar</button>
-                          <button onClick={() => handleToggleAtivo(item)} className={`rounded px-2 py-1 text-xs font-medium ${item.ativo ? 'text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30' : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'}`}>{item.ativo ? 'Desativar' : 'Ativar'}</button>
-                          <button onClick={() => setDeleteConfirm(item.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">Excluir</button>
+                        <div className="inline-flex items-center gap-1.5">
+                          <ListActionButton action="edit" label={`Editar esforço de ${item.criterio.nome} / ${item.complexidade.nome}`} onClick={() => openEdit(item)} />
+                          <ListActionButton action={item.ativo ? 'deactivate' : 'activate'} label={`${item.ativo ? 'Desativar' : 'Ativar'} esforço de ${item.criterio.nome} / ${item.complexidade.nome}`} onClick={() => handleToggleAtivo(item)} />
+                          <ListActionButton action="delete" label={`Excluir esforço de ${item.criterio.nome} / ${item.complexidade.nome}`} onClick={() => setDeleteConfirm(item.id)} />
                         </div>
                       </td>
                     </tr>

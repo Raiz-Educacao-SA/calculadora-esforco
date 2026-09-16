@@ -24,6 +24,10 @@ os passos de operação atualizados. Em 16/09/2026 foram revisados os cadastros 
 estagiários e recalculadas as atividades existentes em andamento; consulte o
 [resultado e o comando de manutenção](ALTERACOES-2026-09-16.md).
 
+As ações individuais das listas utilizam `ListActionButton`/`ListActionLink`,
+com ícones, dicas por mouse/teclado e nomes acessíveis. O [registro da atualização
+visual](ALTERACOES-2026-09-16-ACOES.md) relaciona as telas, o componente e a validação.
+
 ---
 
 ## Módulos e Páginas

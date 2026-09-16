@@ -6,6 +6,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { SourceBadge } from '@/components/ui/SourceBadge'
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge'
+import { ListActionButton } from '@/components/ui/ListActionButton'
 
 const GAIN_TYPE_LABELS: Record<string, string> = {
   REDUCAO_CUSTO: 'Redução de Custo',
@@ -634,14 +635,13 @@ export default function BacklogDetailPage() {
                       {c.confianca != null ? <ConfidenceBadge confidence={c.confianca} /> : '-'}
                     </td>
                     <td className="p-3 text-right">
-                      <button
-                        type="button"
+                      <ListActionButton
+                        action="delete"
+                        label={`Remover ${c.criterio?.nome ?? 'critério'}`}
                         onClick={() => handleRemoveCriterio(c.criterioId)}
                         disabled={isViewer || effortAction != null}
-                        className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-900/30"
-                      >
-                        {effortAction === `remove-${c.criterioId}` ? 'Removendo...' : 'Remover'}
-                      </button>
+                        busy={effortAction === `remove-${c.criterioId}`}
+                      />
                     </td>
                   </tr>
                 ))}
