@@ -109,3 +109,8 @@ a mudança às 18 telas. O manual foi ajustado para identificar as ações pelo
 formato do ícone. ESLint e TypeScript aprovados; verificação local em Edge com
 APIs simuladas confirmou cores iguais entre editar, desativar e excluir nos dois
 temas, dicas por foco e ausência de rolagem horizontal no celular.
+
+Publicado no commit `0757f76`, deployment `dpl_7x85ZPxRztikcVd6q8vqLd8qvvCx`,
+em **16/09/2026 às 11:48**, horário de São Paulo. Build de produção aprovado,
+nenhuma migration pendente, endereço principal apontado para a nova versão e
+status Ready confirmado. `/login` respondeu HTTP 200.
