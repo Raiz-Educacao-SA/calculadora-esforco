@@ -153,3 +153,10 @@ alteração. O arquivo permanece público conforme a configuração existente.
 
 ESLint, TypeScript e build local aprovados. Os HTMLs gerados de login e backlog
 contêm exatamente um `rel="icon"`, apontando para `/logo.jpg` com o tipo correto.
+
+Publicado em 16/09/2026 no commit `da81d1d`, deployment
+`dpl_tD45JpjLz8cZW4fSVE84rNsqwbzL`, Production / Ready. O endereço principal
+foi direcionado à nova versão. Login e imagem retornaram HTTP 200; o HTML de
+produção contém somente o ícone `/logo.jpg`, e a imagem publicada tem tipo
+`image/jpeg` e SHA-256 idêntico ao arquivo local. Build de produção aprovado,
+sem migrations pendentes.
