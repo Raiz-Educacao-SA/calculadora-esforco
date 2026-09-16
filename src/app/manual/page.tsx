@@ -90,15 +90,15 @@ export default function ManualPage() {
         <section id="manual-acoes" className="manual-section scroll-mt-20 lg:scroll-mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Como usar os ícones de ações</h2>
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-            As ações de cada registro aparecem como botões com ícones, à direita das listas ou na parte inferior dos cartões no celular.
+            As ações de cada registro aparecem como botões com ícones em tons neutros, à direita das listas ou na parte inferior dos cartões no celular.
             Passe o mouse ou use <strong>Tab</strong> para mostrar a descrição da ação e o nome do registro.
             Use <strong>Enter</strong> para acionar o controle e <strong>Esc</strong> para fechar a dica.
           </p>
           <ul className="space-y-2">
             <BulletItem><strong>Lápis:</strong> editar o registro.</BulletItem>
             <BulletItem><strong>Olho:</strong> consultar os detalhes. <strong>Documentos:</strong> abrir os contratos do fornecedor. <strong>Seta para fora:</strong> abrir um anexo em nova aba.</BulletItem>
-            <BulletItem><strong>Triângulo verde:</strong> ativar. <strong>Pausa âmbar:</strong> desativar.</BulletItem>
-            <BulletItem><strong>Lixeira vermelha:</strong> excluir ou remover o item; observe a confirmação apresentada pelo sistema.</BulletItem>
+            <BulletItem><strong>Triângulo:</strong> ativar. <strong>Pausa:</strong> desativar.</BulletItem>
+            <BulletItem><strong>Lixeira:</strong> excluir ou remover o item; observe a confirmação apresentada pelo sistema.</BulletItem>
             <BulletItem><strong>Marca de verificação:</strong> salvar a edição na própria lista. <strong>X:</strong> cancelar essa edição.</BulletItem>
             <BulletItem><strong>Marca de verificação dentro de um círculo:</strong> marcar um pagamento como pago. <strong>Calendário:</strong> consultar as férias na timeline.</BulletItem>
             <BulletItem>Durante o processamento, o ícone pode mostrar um indicador de carregamento. Botões esmaecidos estão indisponíveis naquele momento ou para o seu perfil.</BulletItem>

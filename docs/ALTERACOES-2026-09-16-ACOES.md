@@ -14,19 +14,22 @@ solicitações e documentação.
 
 ## Padrão visual e interação
 
-| Ação | Ícone | Cor |
-|---|---|---|
-| Editar | Lápis | Azul |
-| Excluir/remover | Lixeira | Vermelho |
-| Ativar | Triângulo | Verde |
-| Desativar | Pausa | Âmbar |
-| Consultar detalhes | Olho | Neutra |
-| Salvar edição na lista | Marca de verificação | Verde-azulada |
-| Cancelar edição | X | Neutra |
-| Marcar pagamento como pago | Marca de verificação em círculo | Verde |
-| Ver férias na timeline | Calendário | Verde-azulada |
-| Ver contratos do fornecedor | Documentos | Neutra |
-| Abrir anexo | Seta para fora | Neutra |
+Todos os botões usam a mesma paleta neutra em cinza, inclusive nos estados de
+hover e foco, conforme ajuste solicitado após a primeira publicação.
+
+| Ação | Ícone |
+|---|---|
+| Editar | Lápis |
+| Excluir/remover | Lixeira |
+| Ativar | Triângulo |
+| Desativar | Pausa |
+| Consultar detalhes | Olho |
+| Salvar edição na lista | Marca de verificação |
+| Cancelar edição | X |
+| Marcar pagamento como pago | Marca de verificação em círculo |
+| Ver férias na timeline | Calendário |
+| Ver contratos do fornecedor | Documentos |
+| Abrir anexo | Seta para fora |
 
 - Componente compartilhado: `src/components/ui/ListActionButton.tsx`, com
   exports `ListActionButton` e `ListActionLink`, sem dependência de biblioteca
@@ -97,3 +100,12 @@ deployment acima com status Ready. `/login` respondeu HTTP 200; `/areas` e
 `/manual`, sem sessão, responderam HTTP 307 para o login. O build encontrou as
 16 migrations existentes e nenhuma pendente. A interface autenticada foi validada
 localmente conforme descrito acima.
+
+## Ajuste posterior — paleta neutra
+
+Atendendo à preferência do usuário, todas as ações compartilham cores neutras
+em cinza, incluindo borda, ícone, hover e foco. O componente compartilhado aplica
+a mudança às 18 telas. O manual foi ajustado para identificar as ações pelo
+formato do ícone. ESLint e TypeScript aprovados; verificação local em Edge com
+APIs simuladas confirmou cores iguais entre editar, desativar e excluir nos dois
+temas, dicas por foco e ausência de rolagem horizontal no celular.

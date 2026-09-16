@@ -22,23 +22,8 @@ type ListActionLinkProps = ActionProps & {
   href: string
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children' | 'title' | 'aria-label' | 'href'>
 
-const tones = {
-  blue: 'border-blue-200 bg-blue-50/60 text-blue-700 hover:border-blue-300 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:border-blue-600 dark:hover:bg-blue-900/50',
-  red: 'border-red-200 bg-red-50/60 text-red-700 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300 dark:hover:border-red-600 dark:hover:bg-red-900/50',
-  green: 'border-green-200 bg-green-50/60 text-green-700 hover:border-green-300 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300 dark:hover:border-green-600 dark:hover:bg-green-900/50',
-  amber: 'border-amber-200 bg-amber-50/60 text-amber-700 hover:border-amber-300 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:border-amber-600 dark:hover:bg-amber-900/50',
-  teal: 'border-teal-200 bg-teal-50/60 text-teal-700 hover:border-teal-300 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-300 dark:hover:border-teal-600 dark:hover:bg-teal-900/50',
-  neutral: 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-700',
-}
-
-const actionTones: Record<ListAction, keyof typeof tones> = {
-  edit: 'blue', delete: 'red', activate: 'green', deactivate: 'amber',
-  view: 'neutral', save: 'teal', cancel: 'neutral', download: 'neutral',
-  complete: 'green', calendar: 'teal', documents: 'neutral', open: 'neutral',
-}
-
-function actionClassName(action: ListAction, className = '') {
-  return `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors sm:h-9 sm:w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-teal-400 dark:focus-visible:ring-offset-gray-800 disabled:cursor-not-allowed disabled:opacity-45 ${tones[actionTones[action]]} ${className}`
+function actionClassName(className = '') {
+  return `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-700 sm:h-9 sm:w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-800 disabled:cursor-not-allowed disabled:opacity-45 ${className}`
 }
 
 function ActionIcon({ action, busy = false }: { action: ListAction; busy?: boolean }) {
@@ -175,7 +160,7 @@ export function ListActionButton({ action, label, busy = false, disabled, type =
         aria-label={label}
         aria-busy={busy || props['aria-busy']}
         aria-describedby={[props['aria-describedby'], describedBy].filter(Boolean).join(' ') || undefined}
-        className={actionClassName(action, className)}
+        className={actionClassName(className)}
         onMouseEnter={(event) => { onMouseEnter?.(event); if (!event.defaultPrevented) showOnHover() }}
         onMouseLeave={(event) => { onMouseLeave?.(event); leaveHover() }}
         onFocus={(event) => { onFocus?.(event); if (!event.defaultPrevented) showOnFocus() }}
@@ -200,7 +185,7 @@ export function ListActionLink({ action, label, href, className, onMouseEnter, o
         href={href}
         aria-label={label}
         aria-describedby={[props['aria-describedby'], describedBy].filter(Boolean).join(' ') || undefined}
-        className={actionClassName(action, className)}
+        className={actionClassName(className)}
         onMouseEnter={(event) => { onMouseEnter?.(event); if (!event.defaultPrevented) showOnHover() }}
         onMouseLeave={(event) => { onMouseLeave?.(event); leaveHover() }}
         onFocus={(event) => { onFocus?.(event); if (!event.defaultPrevented) showOnFocus() }}
