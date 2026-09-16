@@ -144,3 +144,22 @@ produção não foi usada nessa conferência visual.
 
 Uma nova prévia após o recálculo retornou as mesmas previsões, sem diferenças
 pendentes. Os registros de auditoria e as alocações foram confirmados no banco.
+
+## Atualização de 16/09/2026 — Ícones de ações das listas
+
+Com apoio de três agentes de UX/UI, foram padronizados 97 controles em 18 páginas:
+lápis para editar, lixeira para excluir e ícones específicos para as demais ações.
+Inclui suporte a teclado/leitores de tela, dicas por hover/foco, temas claro/escuro,
+alvos maiores no celular e uma legenda no Manual do Usuário.
+
+- Commit publicado: [`1d25cf2`](https://github.com/Raiz-Educacao-SA/calculadora-esforco/commit/1d25cf2).
+- Deployment: `dpl_CfyeJBdxozBrZPCWP9R9wV8WRFHx`, Production / Ready.
+- Publicação concluída às **11:41 de 16/09/2026**, horário de São Paulo.
+- Endereço principal confirmado: https://transformacao-raiz-backlog.vercel.app.
+- ESLint, TypeScript, 75 testes e build aprovados; fluxos representativos conferidos
+  em Edge com APIs simuladas, desktop/celular e temas claro/escuro.
+- Login HTTP 200; áreas/manual sem sessão redirecionam para login com HTTP 307.
+- Sem alterações de API, schema ou dados de negócio; nenhuma migration pendente.
+
+Escopo completo, componentes e evidências no
+[registro das ações por ícones](ALTERACOES-2026-09-16-ACOES.md).

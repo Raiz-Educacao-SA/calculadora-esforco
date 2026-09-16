@@ -80,4 +80,20 @@ Não há alteração de API, schema, migration, estimativa ou cadastro nesta ent
 
 A conferência visual autenticada utilizou o ambiente local com APIs simuladas.
 Não foram acionadas alterações de registros reais nos testes de interface.
-O resultado da publicação será registrado abaixo após a verificação de produção.
+
+## Publicação
+
+| Registro | Resultado |
+|---|---|
+| Commit da aplicação | [`1d25cf2`](https://github.com/Raiz-Educacao-SA/calculadora-esforco/commit/1d25cf2) |
+| Deployment | `dpl_CfyeJBdxozBrZPCWP9R9wV8WRFHx` — Production / Ready |
+| URL da versão | [transformacao-raiz-backlog-9e96ng5s0.vercel.app](https://transformacao-raiz-backlog-9e96ng5s0.vercel.app) |
+| Endereço principal | [Transformação Backlog](https://transformacao-raiz-backlog.vercel.app) |
+| Manual | [Ícones de ações](https://transformacao-raiz-backlog.vercel.app/manual#manual-acoes) |
+
+A publicação terminou em **16/09/2026 às 14:41:58 UTC** (11:41 em São Paulo).
+O endereço principal foi direcionado à nova versão e sua inspeção confirmou o
+deployment acima com status Ready. `/login` respondeu HTTP 200; `/areas` e
+`/manual`, sem sessão, responderam HTTP 307 para o login. O build encontrou as
+16 migrations existentes e nenhuma pendente. A interface autenticada foi validada
+localmente conforme descrito acima.
