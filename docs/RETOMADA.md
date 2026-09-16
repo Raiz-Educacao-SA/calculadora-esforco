@@ -163,3 +163,19 @@ alvos maiores no celular e uma legenda no Manual do Usuário.
 
 Escopo completo, componentes e evidências no
 [registro das ações por ícones](ALTERACOES-2026-09-16-ACOES.md).
+
+## Atualização de 16/09/2026 — Backlog com encerradas recolhíveis
+
+A seção Concluídas / Canceladas fica recolhida por padrão e mostra a quantidade
+de registros filtrados. Expande por clique/teclado e ao filtrar especificamente
+por Concluído/Cancelado. Seleção e exclusão em lote consideram somente itens
+visíveis; recolher limpa a seleção da seção. Manual atualizado.
+
+- Commit publicado: `4f99155`.
+- Deployment: `dpl_4k94TGtYwzADygKkA1buKeUQq7U1`, Production / Ready.
+- Endereço principal confirmado: https://transformacao-raiz-backlog.vercel.app.
+- ESLint, TypeScript, build local/produção e cenários interativos aprovados.
+- Sem migrations pendentes ou alterações de dados reais nos testes.
+
+Escopo, cenários de validação e publicação no
+[registro do backlog recolhível](ALTERACOES-2026-09-16-BACKLOG.md).

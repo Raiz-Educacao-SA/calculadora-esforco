@@ -59,3 +59,18 @@ e mobile. Não há alterações de API, banco, migrations, estimativas ou histó
   - Nenhum erro de execução no navegador.
 
 As gravações dos testes foram simuladas localmente, sem alterar dados reais.
+
+## Publicação
+
+| Registro | Resultado |
+|---|---|
+| Commit da aplicação | [`4f99155`](https://github.com/Raiz-Educacao-SA/calculadora-esforco/commit/4f99155) |
+| Deployment | `dpl_4k94TGtYwzADygKkA1buKeUQq7U1` — Production / Ready |
+| URL da versão | [transformacao-raiz-backlog-jp92xqlh7.vercel.app](https://transformacao-raiz-backlog-jp92xqlh7.vercel.app) |
+| Backlog publicado | [Transformação Backlog](https://transformacao-raiz-backlog.vercel.app/backlog) |
+
+Publicação de 16/09/2026: build de produção aprovado e nenhuma migration
+pendente entre as 16 existentes. O endereço principal foi direcionado à versão
+acima e sua inspeção confirmou Ready. `/login` retornou HTTP 200; `/backlog`
+sem sessão retornou HTTP 307 para o login. A interface autenticada foi validada
+localmente com APIs simuladas, conforme os cenários descritos acima.
